@@ -1481,8 +1481,14 @@ select.field__input { appearance:none; }
 <script>
 // ═══════════════════════════════════════════════════════════
 //  CONFIG
+//  API_URL: localStorage থেকে নেওয়া হয় — না থাকলে hardcode URL
 // ═══════════════════════════════════════════════════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycbzDns6aYmUtztgR9fY2cRLWMcWDofdtcgt6vqqPootyEern70NO0UmV5_DCWcJQ3AxVew/exec';
+const API_URL_KEY = 'salat_api_url';
+function getApiUrl() {
+  return localStorage.getItem(API_URL_KEY) || 'https://script.google.com/macros/s/AKfycbwsR6FAmf3mVhAa9AilphGoJH1jb-OJGxmnqssfW1FTyjh47oKxzAKvx7VkihuCJHWJUw/exec';
+}
+// API_URL এখন getter হিসেবে কাজ করে
+let API_URL = getApiUrl();
 
 // Default hashed PIN (SHA-256 of "786786")
 // To change: enter new PIN in the Setup section, copy hash, store here
@@ -1655,19 +1661,31 @@ function escHtml(str) {
 
 // ═══════════════════════════════════════════════════════════
 //  API HELPERS
+//  FIX: Google Apps Script CORS — Content-Type must be
+//  text/plain (not application/json) to avoid preflight.
+//  Data is still sent as JSON string in the body.
 // ═══════════════════════════════════════════════════════════
 async function apiGet(params) {
   const qs = new URLSearchParams(params).toString();
-  const res = await fetch(`${API_URL}?${qs}`, { method:'GET', redirect:'follow' });
+  const res = await fetch(`${API_URL}?${qs}`, {
+    method: 'GET',
+    redirect: 'follow',
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
 
 async function apiPost(body) {
   const res = await fetch(API_URL, {
-    method:'POST', redirect:'follow',
-    headers:{ 'Content-Type':'application/json' },
+    method: 'POST',
+    redirect: 'follow',
+    // ⚠️ Google Apps Script CORS fix:
+    // Content-Type: text/plain দিলে preflight হয় না
+    // কিন্তু body JSON string হিসেবেই পাঠানো হচ্ছে
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(body),
   });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
 
@@ -2089,7 +2107,10 @@ async function handleAuth() {
     saveSession({ ...res.data, is_admin:false });
     toast(`স্বাগতম, ${name}! ✨`, 'ok');
     enterApp();
-  } catch { toast('সংযোগ ব্যর্থ। নেটওয়ার্ক চেক করুন।', 'err'); }
+  } catch (e) {
+    console.error('Auth error:', e);
+    toast('সংযোগ ব্যর্থ। API URL চেক করুন বা পেজ রিলোড করুন।', 'err');
+  }
   finally   { loading(false); }
 }
 
@@ -2198,7 +2219,10 @@ async function submitAllWaqt() {
     if (!res.success) { toast(res.message, 'err'); return; }
     toast(`✓ ${res.data.saved.length}টি নামাজ সেভ হয়েছে!`, 'ok');
     updateStreakDisplay(res.data.streak);
-  } catch { toast('সেভ ব্যর্থ হয়েছে। আবার চেষ্টা করুন।', 'err'); }
+  } catch (e) {
+    console.error('submitAllWaqt error:', e);
+    toast('সেভ ব্যর্থ। কনসোল দেখুন (F12)।', 'err');
+  }
   finally   { loading(false); }
 }
 
@@ -2210,7 +2234,10 @@ async function loadStreakData() {
   try {
     const res = await apiGet({ action:'getStreak', user_id:SESSION.user_id });
     if (res.success) updateStreakDisplay(res.data);
-  } catch {}
+    else toast('স্ট্রিক লোড ব্যর্থ: ' + res.message, 'err');
+  } catch (e) {
+    console.error('loadStreakData error:', e);
+  }
 }
 
 function updateStreakDisplay(data) {
