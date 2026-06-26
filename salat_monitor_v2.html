@@ -1,0 +1,2470 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Salat Monitor v2 — مراقبة الصلاة</title>
+<link rel="manifest" href="#"/>
+<meta name="theme-color" content="#0D0F14"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<!-- Chart.js for admin visualizations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════════════════ */
+:root {
+  --gold:        #C9A84C;
+  --gold-light:  #E8C97A;
+  --gold-dim:    #7A6330;
+  --emerald:     #2D7A5A;
+  --emerald-l:   #3DA876;
+  --rose:        #C0444A;
+  --rose-l:      #E05A60;
+
+  /* Dark theme (default) */
+  --bg:          #0D0F14;
+  --bg-card:     #141720;
+  --bg-elevated: #1C2030;
+  --bg-input:    #1A1E2A;
+  --border:      rgba(201,168,76,0.15);
+  --border-soft: rgba(255,255,255,0.06);
+  --text-primary:#F0EDE6;
+  --text-body:   #A9A89E;
+  --text-muted:  #5C5C66;
+  --shadow:      0 8px 32px rgba(0,0,0,0.5);
+  --shadow-gold: 0 0 24px rgba(201,168,76,0.18);
+  --radius:      14px;
+  --radius-sm:   8px;
+  --font-display:"Amiri", serif;
+  --font-body:   "Inter", sans-serif;
+  --font-mono:   "JetBrains Mono", monospace;
+  --transition:  0.22s cubic-bezier(0.4,0,0.2,1);
+}
+[data-theme="light"] {
+  --bg:          #F5F3EE;
+  --bg-card:     #FFFFFF;
+  --bg-elevated: #EDE9E0;
+  --bg-input:    #F0EDE6;
+  --border:      rgba(139,105,50,0.2);
+  --border-soft: rgba(0,0,0,0.07);
+  --text-primary:#1A1410;
+  --text-body:   #4A4540;
+  --text-muted:  #9A9590;
+  --shadow:      0 4px 20px rgba(0,0,0,0.10);
+  --shadow-gold: 0 0 20px rgba(201,168,76,0.12);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════════════ */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; -webkit-tap-highlight-color:transparent; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100dvh;
+  line-height: 1.6;
+  transition: background var(--transition), color var(--transition);
+  overflow-x: hidden;
+}
+button { cursor:pointer; font-family:inherit; border:none; background:none; }
+input, textarea, select { font-family:inherit; }
+a { color:inherit; text-decoration:none; }
+img { max-width:100%; }
+
+/* ═══════════════════════════════════════════════════════════
+   GEOMETRIC BACKGROUND PATTERN (Signature Element)
+═══════════════════════════════════════════════════════════ */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    repeating-linear-gradient(60deg,transparent,transparent 40px,rgba(201,168,76,0.025) 40px,rgba(201,168,76,0.025) 41px),
+    repeating-linear-gradient(-60deg,transparent,transparent 40px,rgba(201,168,76,0.025) 40px,rgba(201,168,76,0.025) 41px);
+  pointer-events:none;
+  z-index:0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════════════════ */
+#app { position:relative; z-index:1; }
+.container { max-width:480px; margin:0 auto; padding:0 16px; }
+.container--wide { max-width:900px; margin:0 auto; padding:0 16px; }
+
+/* ═══════════════════════════════════════════════════════════
+   TOP NAV
+═══════════════════════════════════════════════════════════ */
+.topnav {
+  position:sticky; top:0; z-index:100;
+  background: rgba(13,15,20,0.85);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--border);
+  padding:12px 16px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+[data-theme="light"] .topnav { background:rgba(245,243,238,0.88); }
+.topnav__brand {
+  display:flex; align-items:center; gap:10px;
+}
+.topnav__icon {
+  width:34px; height:34px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+  border-radius:50%;
+  display:grid; place-items:center;
+  font-size:18px;
+}
+.topnav__title {
+  font-family: var(--font-display);
+  font-size:1.2rem;
+  color: var(--gold-light);
+  line-height:1.1;
+}
+.topnav__sub { font-size:0.65rem; color:var(--text-muted); letter-spacing:0.06em; text-transform:uppercase; }
+.topnav__actions { display:flex; align-items:center; gap:8px; }
+.btn-icon {
+  width:36px; height:36px;
+  background:var(--bg-elevated);
+  border:1px solid var(--border-soft);
+  border-radius:50%;
+  display:grid; place-items:center;
+  font-size:16px;
+  transition: border-color var(--transition), transform var(--transition);
+}
+.btn-icon:hover { border-color:var(--gold-dim); transform:scale(1.05); }
+
+/* ═══════════════════════════════════════════════════════════
+   BOTTOM NAV
+═══════════════════════════════════════════════════════════ */
+.bottomnav {
+  position:fixed; bottom:0; left:0; right:0; z-index:100;
+  background: rgba(13,15,20,0.92);
+  backdrop-filter:blur(18px);
+  border-top:1px solid var(--border);
+  display:flex;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+[data-theme="light"] .bottomnav { background:rgba(245,243,238,0.92); }
+.bottomnav__item {
+  flex:1; display:flex; flex-direction:column; align-items:center;
+  gap:3px; padding:10px 4px;
+  font-size:0.6rem; color:var(--text-muted);
+  letter-spacing:0.04em; text-transform:uppercase;
+  transition: color var(--transition);
+}
+.bottomnav__item.active { color:var(--gold); }
+.bottomnav__item .icon { font-size:20px; line-height:1; }
+
+/* ═══════════════════════════════════════════════════════════
+   SCREENS
+═══════════════════════════════════════════════════════════ */
+.screen { display:none; padding:20px 0 100px; }
+.screen.active { display:block; }
+
+/* ═══════════════════════════════════════════════════════════
+   CARD
+═══════════════════════════════════════════════════════════ */
+.card {
+  background: var(--bg-card);
+  border:1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding:20px;
+  box-shadow: var(--shadow);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.card:hover { border-color:var(--border); }
+.card--gold { border-color:var(--border); box-shadow:var(--shadow), var(--shadow-gold); }
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION HEADER
+═══════════════════════════════════════════════════════════ */
+.section-hd {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:18px;
+}
+.section-hd__title {
+  font-family: var(--font-display);
+  font-size:1.3rem;
+  color:var(--text-primary);
+}
+.section-hd__arabic {
+  font-family:var(--font-display);
+  font-size:0.85rem;
+  color:var(--gold);
+  opacity:0.7;
+}
+.label-tag {
+  font-size:0.65rem; letter-spacing:0.08em; text-transform:uppercase;
+  padding:3px 10px;
+  background:rgba(201,168,76,0.1);
+  border:1px solid rgba(201,168,76,0.25);
+  border-radius:20px;
+  color:var(--gold);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════════════════════ */
+.btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding:12px 22px;
+  border-radius:var(--radius-sm);
+  font-size:0.88rem; font-weight:600;
+  letter-spacing:0.02em;
+  transition: all var(--transition);
+  position:relative; overflow:hidden;
+}
+.btn::after {
+  content:''; position:absolute; inset:0;
+  background:rgba(255,255,255,0.07);
+  opacity:0; transition:opacity var(--transition);
+}
+.btn:hover::after { opacity:1; }
+.btn:active { transform:scale(0.97); }
+.btn--primary {
+  background:linear-gradient(135deg, var(--gold), #A8862A);
+  color:#0D0F14;
+}
+.btn--ghost {
+  background:var(--bg-elevated);
+  border:1px solid var(--border-soft);
+  color:var(--text-body);
+}
+.btn--ghost:hover { border-color:var(--gold-dim); color:var(--text-primary); }
+.btn--danger {
+  background:rgba(192,68,74,0.15);
+  border:1px solid rgba(192,68,74,0.3);
+  color:var(--rose-l);
+}
+.btn--success {
+  background:rgba(45,122,90,0.15);
+  border:1px solid rgba(45,122,90,0.3);
+  color:var(--emerald-l);
+}
+.btn--full { width:100%; }
+.btn--sm { padding:8px 14px; font-size:0.8rem; }
+
+/* ═══════════════════════════════════════════════════════════
+   INPUTS
+═══════════════════════════════════════════════════════════ */
+.field { margin-bottom:16px; }
+.field__label {
+  display:block; margin-bottom:6px;
+  font-size:0.78rem; font-weight:500;
+  color:var(--text-muted); letter-spacing:0.05em; text-transform:uppercase;
+}
+.field__input {
+  width:100%;
+  background:var(--bg-input);
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm);
+  padding:12px 14px;
+  font-size:0.92rem;
+  color:var(--text-primary);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  outline:none;
+}
+.field__input:focus {
+  border-color:var(--gold-dim);
+  box-shadow:0 0 0 3px rgba(201,168,76,0.1);
+}
+.field__input::placeholder { color:var(--text-muted); }
+textarea.field__input { resize:vertical; min-height:90px; }
+select.field__input { appearance:none; }
+
+/* ═══════════════════════════════════════════════════════════
+   AUTH SCREEN
+═══════════════════════════════════════════════════════════ */
+#screen-auth {
+  display:flex; flex-direction:column;
+  min-height:100dvh; padding:0;
+  justify-content:center;
+}
+.auth-bg {
+  position:fixed; inset:0; z-index:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%, rgba(201,168,76,0.12) 0%, transparent 70%);
+}
+.auth-wrap {
+  position:relative; z-index:1;
+  padding:40px 20px;
+  max-width:380px; margin:0 auto; width:100%;
+}
+.auth-logo {
+  text-align:center; margin-bottom:32px;
+}
+.auth-logo__ring {
+  width:80px; height:80px;
+  border-radius:50%;
+  background:linear-gradient(135deg,rgba(201,168,76,0.3),rgba(201,168,76,0.05));
+  border:2px solid rgba(201,168,76,0.4);
+  display:flex; align-items:center; justify-content:center;
+  font-size:36px; margin:0 auto 14px;
+  box-shadow:0 0 40px rgba(201,168,76,0.15);
+}
+.auth-logo__arabic {
+  font-family:var(--font-display);
+  font-size:2.2rem; color:var(--gold-light);
+  display:block; line-height:1;
+}
+.auth-logo__sub {
+  font-size:0.75rem; color:var(--text-muted);
+  letter-spacing:0.2em; text-transform:uppercase; margin-top:4px;
+}
+.auth-divider {
+  display:flex; align-items:center; gap:12px;
+  margin:20px 0;
+  color:var(--text-muted); font-size:0.78rem;
+}
+.auth-divider::before, .auth-divider::after {
+  content:''; flex:1; height:1px; background:var(--border-soft);
+}
+.phone-prefix {
+  display:flex; align-items:center; gap:0;
+}
+.phone-prefix__code {
+  background:var(--bg-elevated);
+  border:1px solid var(--border-soft);
+  border-right:none;
+  border-radius:var(--radius-sm) 0 0 var(--radius-sm);
+  padding:12px 14px;
+  font-size:0.92rem;
+  color:var(--text-muted);
+  white-space:nowrap;
+}
+.phone-prefix .field__input {
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GREETING STRIP
+═══════════════════════════════════════════════════════════ */
+.greeting {
+  background:linear-gradient(135deg, rgba(201,168,76,0.12), rgba(45,122,90,0.08));
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px 18px;
+  margin-bottom:18px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.greeting__text { font-size:0.82rem; color:var(--text-muted); }
+.greeting__name { font-size:1.1rem; font-weight:600; color:var(--text-primary); }
+.greeting__arabic { font-family:var(--font-display); font-size:1.1rem; color:var(--gold); }
+
+/* ═══════════════════════════════════════════════════════════
+   WAQT TRACKER
+═══════════════════════════════════════════════════════════ */
+.waqt-grid { display:flex; flex-direction:column; gap:10px; }
+.waqt-row {
+  background:var(--bg-elevated);
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm);
+  padding:14px 16px;
+  transition: border-color var(--transition), background var(--transition);
+}
+.waqt-row.logged { border-color:var(--emerald); background:rgba(45,122,90,0.06); }
+.waqt-row.missed { border-color:var(--rose); background:rgba(192,68,74,0.05); }
+.waqt-row__header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:10px;
+}
+.waqt-row__name {
+  display:flex; align-items:center; gap:8px;
+  font-weight:600; font-size:0.95rem;
+}
+.waqt-row__name .dot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--gold);
+}
+.waqt-row__arabic { font-family:var(--font-display); font-size:0.9rem; color:var(--gold); opacity:0.65; }
+.waqt-options {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:6px;
+}
+.waqt-option { display:none; }
+.waqt-option + label {
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:8px 4px;
+  background:var(--bg-card);
+  border:1.5px solid var(--border-soft);
+  border-radius:var(--radius-sm);
+  font-size:0.7rem; font-weight:500; color:var(--text-muted);
+  cursor:pointer;
+  transition: all var(--transition);
+  text-align:center;
+  line-height:1.2;
+}
+.waqt-option + label .opt-icon { font-size:18px; }
+.waqt-option:checked + label {
+  border-color:var(--gold);
+  background:rgba(201,168,76,0.12);
+  color:var(--gold-light);
+}
+.waqt-option[value="mosque"]:checked + label { border-color:var(--emerald); background:rgba(45,122,90,0.12); color:var(--emerald-l); }
+.waqt-option[value="missed"]:checked + label  { border-color:var(--rose); background:rgba(192,68,74,0.1); color:var(--rose-l); }
+.reason-box {
+  margin-top:10px;
+  display:none;
+  animation: slideDown 0.2s ease;
+}
+.reason-box.show { display:block; }
+@keyframes slideDown {
+  from { opacity:0; transform:translateY(-8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.waqt-submit-bar { margin-top:16px; display:flex; gap:10px; }
+
+/* ═══════════════════════════════════════════════════════════
+   STREAK / 40-DAY CHALLENGE
+═══════════════════════════════════════════════════════════ */
+.streak-card {
+  background:linear-gradient(135deg, rgba(201,168,76,0.08) 0%, rgba(45,122,90,0.05) 100%);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:22px 20px;
+  text-align:center;
+  box-shadow: var(--shadow-gold);
+  position:relative; overflow:hidden;
+}
+.streak-card::before {
+  content:'بِسْمِ اللَّه';
+  position:absolute;
+  top:-4px; right:12px;
+  font-family:var(--font-display);
+  font-size:4rem;
+  color:var(--gold);
+  opacity:0.04;
+  pointer-events:none;
+  line-height:1;
+}
+.streak-ring-wrap {
+  position:relative; width:140px; height:140px;
+  margin:0 auto 16px;
+}
+.streak-ring {
+  width:100%; height:100%;
+  transform:rotate(-90deg);
+}
+.streak-ring__bg { fill:none; stroke:var(--bg-elevated); stroke-width:8; }
+.streak-ring__fill {
+  fill:none;
+  stroke:url(#streakGrad);
+  stroke-width:8;
+  stroke-linecap:round;
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1);
+}
+.streak-ring__text {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+.streak-ring__number {
+  font-size:2.6rem; font-weight:700;
+  color:var(--gold-light);
+  line-height:1;
+  font-family:var(--font-mono);
+}
+.streak-ring__label { font-size:0.68rem; color:var(--text-muted); letter-spacing:0.1em; text-transform:uppercase; margin-top:2px; }
+.streak-meta { display:flex; justify-content:center; gap:28px; margin-top:12px; }
+.streak-stat { text-align:center; }
+.streak-stat__val { font-size:1.3rem; font-weight:700; color:var(--text-primary); font-family:var(--font-mono); }
+.streak-stat__key { font-size:0.68rem; color:var(--text-muted); letter-spacing:0.06em; text-transform:uppercase; }
+.streak-badges { display:flex; justify-content:center; gap:8px; margin-top:14px; flex-wrap:wrap; }
+.badge {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:5px 11px;
+  border-radius:20px;
+  font-size:0.72rem; font-weight:600;
+  border:1px solid;
+}
+.badge--gold  { background:rgba(201,168,76,0.1); border-color:rgba(201,168,76,0.3); color:var(--gold-light); }
+.badge--green { background:rgba(45,122,90,0.12); border-color:rgba(45,122,90,0.35); color:var(--emerald-l); }
+.badge--muted { background:var(--bg-elevated); border-color:var(--border-soft); color:var(--text-muted); }
+
+/* 40-day grid */
+.day-grid {
+  display:grid;
+  grid-template-columns:repeat(10,1fr);
+  gap:4px; margin-top:14px;
+}
+.day-dot {
+  aspect-ratio:1;
+  border-radius:3px;
+  background:var(--bg-elevated);
+  transition: background var(--transition), transform var(--transition);
+}
+.day-dot.done { background:var(--emerald); }
+.day-dot.today { background:var(--gold); transform:scale(1.2); }
+.day-dot.missed { background:var(--rose); opacity:0.55; }
+
+/* ═══════════════════════════════════════════════════════════
+   GOOD DEEDS DIARY
+═══════════════════════════════════════════════════════════ */
+.deeds-timeline { display:flex; flex-direction:column; gap:12px; margin-top:16px; }
+.deed-item {
+  display:flex; gap:12px;
+  position:relative;
+}
+.deed-item::before {
+  content:'';
+  position:absolute;
+  left:15px; top:32px; bottom:-12px;
+  width:1px;
+  background:var(--border-soft);
+}
+.deed-item:last-child::before { display:none; }
+.deed-item__dot {
+  flex-shrink:0;
+  width:30px; height:30px;
+  border-radius:50%;
+  background:rgba(201,168,76,0.12);
+  border:1.5px solid var(--gold-dim);
+  display:grid; place-items:center;
+  font-size:13px;
+  margin-top:2px;
+}
+.deed-item__body { flex:1; }
+.deed-item__text { font-size:0.9rem; color:var(--text-primary); line-height:1.5; }
+.deed-item__time { font-size:0.7rem; color:var(--text-muted); margin-top:3px; font-family:var(--font-mono); }
+.deed-item__actions { display:flex; gap:6px; margin-top:6px; }
+
+/* ═══════════════════════════════════════════════════════════
+   SOCIAL REPORT
+═══════════════════════════════════════════════════════════ */
+.anon-note {
+  background:rgba(192,68,74,0.08);
+  border:1px solid rgba(192,68,74,0.2);
+  border-radius:var(--radius-sm);
+  padding:10px 14px;
+  font-size:0.8rem;
+  color:var(--text-muted);
+  display:flex; align-items:flex-start; gap:8px;
+  margin-bottom:16px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE CHAT / Q&A
+═══════════════════════════════════════════════════════════ */
+.chat-thread { display:flex; flex-direction:column; gap:12px; margin-bottom:16px; }
+.chat-bubble {
+  max-width:85%;
+  padding:12px 14px;
+  border-radius:var(--radius);
+  font-size:0.88rem;
+  line-height:1.55;
+}
+.chat-bubble--question {
+  align-self:flex-end;
+  background:rgba(201,168,76,0.12);
+  border:1px solid rgba(201,168,76,0.2);
+  border-bottom-right-radius:4px;
+}
+.chat-bubble--answer {
+  align-self:flex-start;
+  background:var(--bg-elevated);
+  border:1px solid var(--border-soft);
+  border-bottom-left-radius:4px;
+}
+.chat-bubble__meta { font-size:0.68rem; color:var(--text-muted); margin-top:5px; font-family:var(--font-mono); }
+.chat-bubble--answer .chat-bubble__meta { color:var(--emerald-l); }
+.chat-pending {
+  align-self:flex-end;
+  font-size:0.72rem; color:var(--text-muted);
+  display:flex; align-items:center; gap:5px;
+  padding:0 4px;
+}
+.chat-dots span {
+  display:inline-block; width:5px; height:5px;
+  border-radius:50%; background:var(--text-muted);
+  animation:chatDot 1.2s infinite;
+}
+.chat-dots span:nth-child(2) { animation-delay:0.2s; }
+.chat-dots span:nth-child(3) { animation-delay:0.4s; }
+@keyframes chatDot {
+  0%,80%,100% { transform:scale(0.6); opacity:0.4; }
+  40%          { transform:scale(1); opacity:1; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ADMIN PANEL
+═══════════════════════════════════════════════════════════ */
+.admin-gate {
+  text-align:center; padding:40px 20px;
+}
+.admin-gate__icon { font-size:48px; margin-bottom:16px; }
+.search-bar {
+  display:flex; align-items:center; gap:8px;
+  background:var(--bg-input);
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm);
+  padding:10px 14px;
+  margin-bottom:16px;
+}
+.search-bar input {
+  flex:1; background:none; border:none; outline:none;
+  font-size:0.9rem; color:var(--text-primary);
+}
+.search-bar input::placeholder { color:var(--text-muted); }
+.stats-grid {
+  display:grid; grid-template-columns:repeat(2,1fr); gap:10px;
+  margin-bottom:18px;
+}
+.stat-card {
+  background:var(--bg-card);
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm);
+  padding:14px;
+}
+.stat-card__val { font-size:1.8rem; font-weight:700; color:var(--gold-light); font-family:var(--font-mono); line-height:1; }
+.stat-card__key { font-size:0.7rem; color:var(--text-muted); letter-spacing:0.06em; text-transform:uppercase; margin-top:4px; }
+.user-list { display:flex; flex-direction:column; gap:10px; }
+.user-card {
+  background:var(--bg-card);
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm);
+  padding:14px 16px;
+  display:flex; align-items:center; gap:12px;
+  transition: border-color var(--transition);
+}
+.user-card:hover { border-color:var(--border); }
+.user-card__avatar {
+  width:40px; height:40px; border-radius:50%;
+  background:linear-gradient(135deg, var(--gold-dim), rgba(201,168,76,0.2));
+  display:grid; place-items:center;
+  font-size:16px; flex-shrink:0;
+}
+.user-card__info { flex:1; min-width:0; }
+.user-card__name { font-weight:600; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.user-card__phone { font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono); }
+.user-card__streak {
+  font-size:0.7rem; font-weight:600;
+  padding:3px 8px; border-radius:10px;
+  background:rgba(201,168,76,0.1);
+  border:1px solid rgba(201,168,76,0.2);
+  color:var(--gold);
+  white-space:nowrap;
+}
+.user-card__actions { display:flex; gap:6px; flex-shrink:0; }
+.action-btn {
+  width:34px; height:34px;
+  border-radius:50%;
+  display:grid; place-items:center;
+  font-size:16px;
+  border:1px solid var(--border-soft);
+  background:var(--bg-elevated);
+  transition: all var(--transition);
+  text-decoration:none;
+}
+.action-btn--call { border-color:rgba(45,122,90,0.35); }
+.action-btn--call:hover { background:rgba(45,122,90,0.15); border-color:var(--emerald); }
+.action-btn--wa { border-color:rgba(37,211,102,0.3); }
+.action-btn--wa:hover { background:rgba(37,211,102,0.1); border-color:rgba(37,211,102,0.6); }
+.attendance-bar-wrap { margin-top:6px; }
+.attendance-bar {
+  height:4px; background:var(--bg-elevated);
+  border-radius:2px; overflow:hidden; margin-top:4px;
+}
+.attendance-bar__fill {
+  height:100%; border-radius:2px;
+  background:linear-gradient(90deg, var(--emerald), var(--gold));
+  transition:width 1s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════ */
+#toast-wrap {
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+  z-index:999; display:flex; flex-direction:column; align-items:center; gap:8px;
+  pointer-events:none;
+}
+.toast {
+  padding:11px 20px;
+  border-radius:24px;
+  font-size:0.83rem; font-weight:500;
+  backdrop-filter:blur(12px);
+  animation: toastIn 0.3s ease, toastOut 0.3s ease 2.4s forwards;
+  pointer-events:none;
+  white-space:nowrap;
+}
+.toast--ok  { background:rgba(45,122,90,0.9); color:#fff; border:1px solid rgba(255,255,255,0.1); }
+.toast--err { background:rgba(192,68,74,0.9); color:#fff; border:1px solid rgba(255,255,255,0.1); }
+.toast--info{ background:rgba(201,168,76,0.9); color:#0D0F14; border:1px solid rgba(255,255,255,0.15); }
+@keyframes toastIn  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes toastOut { from{opacity:1} to{opacity:0;pointer-events:none} }
+
+/* ═══════════════════════════════════════════════════════════
+   LOADING SPINNER
+═══════════════════════════════════════════════════════════ */
+.spinner {
+  width:20px; height:20px;
+  border:2px solid rgba(255,255,255,0.2);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+  display:inline-block;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+.loading-overlay {
+  position:fixed; inset:0; z-index:200;
+  background:rgba(13,15,20,0.6);
+  backdrop-filter:blur(4px);
+  display:none; place-items:center;
+}
+.loading-overlay.show { display:grid; }
+
+/* ═══════════════════════════════════════════════════════════
+   MISC UTILS
+═══════════════════════════════════════════════════════════ */
+.gap-y { display:flex; flex-direction:column; gap:14px; }
+.mt-4  { margin-top:16px; }
+.mt-2  { margin-top:8px; }
+.mb-4  { margin-bottom:16px; }
+.text-muted { color:var(--text-muted); font-size:0.82rem; }
+.text-gold  { color:var(--gold); }
+.text-center { text-align:center; }
+.empty-state {
+  text-align:center; padding:32px 16px;
+  color:var(--text-muted); font-size:0.88rem;
+}
+.empty-state .emoji { font-size:36px; margin-bottom:10px; display:block; }
+.divider { height:1px; background:var(--border-soft); margin:18px 0; }
+.flex-between { display:flex; align-items:center; justify-content:space-between; }
+.chip {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:3px 10px; border-radius:20px;
+  font-size:0.7rem; font-weight:600;
+  background:var(--bg-elevated);
+  border:1px solid var(--border-soft);
+  color:var(--text-muted);
+}
+.chip--green { background:rgba(45,122,90,0.1); border-color:rgba(45,122,90,0.3); color:var(--emerald-l); }
+.chip--red   { background:rgba(192,68,74,0.1); border-color:rgba(192,68,74,0.3); color:var(--rose-l); }
+.chip--gold  { background:rgba(201,168,76,0.1); border-color:rgba(201,168,76,0.3); color:var(--gold-light); }
+
+/* ═══════════════════════════════════════════════════════════
+   TABS (within admin panel)
+═══════════════════════════════════════════════════════════ */
+.tab-bar {
+  display:flex; gap:4px;
+  background:var(--bg-elevated);
+  border-radius:var(--radius-sm);
+  padding:4px;
+  margin-bottom:18px;
+}
+.tab-btn {
+  flex:1; padding:9px 6px;
+  font-size:0.75rem; font-weight:600;
+  letter-spacing:0.04em;
+  color:var(--text-muted);
+  border-radius:calc(var(--radius-sm) - 2px);
+  transition: all var(--transition);
+  text-align:center;
+}
+.tab-btn.active {
+  background:var(--bg-card);
+  color:var(--gold);
+  box-shadow:0 1px 6px rgba(0,0,0,0.3);
+}
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+/* admin reply chat */
+.admin-chat-item {
+  background:var(--bg-elevated);
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm);
+  padding:14px;
+  margin-bottom:10px;
+}
+.admin-chat-item__q { font-size:0.88rem; color:var(--text-primary); margin-bottom:8px; }
+.admin-chat-item__from { font-size:0.72rem; color:var(--text-muted); margin-bottom:10px; font-family:var(--font-mono); }
+.admin-chat-item__reply-area { display:flex; gap:8px; }
+.admin-chat-item__reply-area .field__input { flex:1; margin-bottom:0; }
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════════ */
+@media(min-width:600px) {
+  .container, .container--wide { padding:0 24px; }
+  .waqt-options { grid-template-columns:repeat(4,1fr); }
+  .stats-grid { grid-template-columns:repeat(4,1fr); }
+  .day-grid { grid-template-columns:repeat(10,1fr); gap:6px; }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  *, *::before, *::after { animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PRAYER TIME WIDGET
+═══════════════════════════════════════════════════════════ */
+.prayer-times-strip {
+  display:flex; gap:6px; overflow-x:auto; padding-bottom:4px;
+  scrollbar-width:none; margin-bottom:18px;
+}
+.prayer-times-strip::-webkit-scrollbar { display:none; }
+.pt-card {
+  flex-shrink:0; min-width:72px;
+  background:var(--bg-elevated);
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm);
+  padding:10px 8px; text-align:center;
+  transition: border-color var(--transition);
+}
+.pt-card.active-waqt {
+  border-color:var(--gold);
+  background:rgba(201,168,76,0.1);
+}
+.pt-card__name { font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; }
+.pt-card__icon { font-size:18px; margin:3px 0; line-height:1; }
+.pt-card__time { font-size:0.8rem; font-weight:700; color:var(--text-primary); font-family:var(--font-mono); }
+.pt-card.active-waqt .pt-card__time { color:var(--gold-light); }
+.next-prayer-banner {
+  background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(45,122,90,0.07));
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:12px 16px;
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:14px;
+}
+.next-prayer-banner__label { font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.07em; }
+.next-prayer-banner__name  { font-size:1rem; font-weight:700; color:var(--text-primary); }
+.next-prayer-banner__countdown {
+  font-family:var(--font-mono); font-size:1.3rem;
+  font-weight:700; color:var(--gold-light); letter-spacing:0.04em;
+}
+.location-row {
+  display:flex; align-items:center; gap:8px;
+  font-size:0.78rem; color:var(--text-muted); margin-bottom:14px;
+  cursor:pointer;
+}
+.location-row__dot { width:6px; height:6px; border-radius:50%; background:var(--emerald-l); flex-shrink:0; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+/* ═══════════════════════════════════════════════════════════
+   PUSH NOTIFICATION UI
+═══════════════════════════════════════════════════════════ */
+.notif-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:13px 0; border-bottom:1px solid var(--border-soft);
+}
+.notif-row:last-child { border-bottom:none; }
+.notif-row__info { flex:1; }
+.notif-row__title { font-size:0.9rem; font-weight:500; color:var(--text-primary); }
+.notif-row__sub   { font-size:0.75rem; color:var(--text-muted); margin-top:2px; }
+.toggle { position:relative; width:44px; height:24px; flex-shrink:0; }
+.toggle input { opacity:0; width:0; height:0; position:absolute; }
+.toggle__track {
+  position:absolute; inset:0;
+  background:var(--bg-elevated);
+  border:1px solid var(--border-soft);
+  border-radius:12px; cursor:pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.toggle input:checked ~ .toggle__track { background:var(--emerald); border-color:var(--emerald); }
+.toggle__thumb {
+  position:absolute; top:3px; left:3px;
+  width:16px; height:16px; border-radius:50%;
+  background:#fff; transition:transform var(--transition); pointer-events:none;
+}
+.toggle input:checked ~ .toggle__track .toggle__thumb { transform:translateX(20px); }
+.notif-status-bar {
+  padding:10px 14px; border-radius:var(--radius-sm);
+  font-size:0.8rem; display:flex; align-items:center; gap:8px; margin-bottom:14px;
+}
+.notif-status-bar--granted { background:rgba(45,122,90,0.1); border:1px solid rgba(45,122,90,0.25); color:var(--emerald-l); }
+.notif-status-bar--denied  { background:rgba(192,68,74,0.08); border:1px solid rgba(192,68,74,0.2); color:var(--rose-l); }
+.notif-status-bar--default { background:rgba(201,168,76,0.08); border:1px solid rgba(201,168,76,0.2); color:var(--gold); }
+
+/* ═══════════════════════════════════════════════════════════
+   ADMIN CHARTS
+═══════════════════════════════════════════════════════════ */
+.chart-card {
+  background:var(--bg-card);
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius);
+  padding:18px; margin-bottom:14px;
+}
+.chart-card__title {
+  font-size:0.8rem; font-weight:600; color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:0.07em; margin-bottom:14px;
+}
+.chart-wrap { position:relative; height:200px; }
+.chart-wrap--tall { height:250px; }
+.chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+@media(max-width:540px) { .chart-grid { grid-template-columns:1fr; } }
+
+/* ═══════════════════════════════════════════════════════════
+   SECURE PIN UI
+═══════════════════════════════════════════════════════════ */
+.pin-strength { display:flex; gap:4px; margin-top:8px; }
+.pin-strength__dot {
+  flex:1; height:3px; border-radius:2px; background:var(--bg-elevated);
+  transition:background var(--transition);
+}
+.pin-hint { font-size:0.72rem; color:var(--text-muted); margin-top:5px; }
+.hash-display {
+  font-family:var(--font-mono); font-size:0.6rem;
+  color:var(--text-muted); word-break:break-all;
+  background:var(--bg-elevated); padding:8px 10px;
+  border-radius:var(--radius-sm); margin-top:8px; display:none;
+  border:1px solid var(--border-soft);
+}
+.hash-display.show { display:block; }
+.pin-input-wrap { position:relative; }
+.pin-input-wrap .pin-eye {
+  position:absolute; right:12px; top:50%; transform:translateY(-50%);
+  background:none; border:none; cursor:pointer; font-size:16px; color:var(--text-muted);
+  padding:4px;
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══════════ LOADING OVERLAY ═══════════ -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div style="text-align:center">
+      <div class="spinner" style="width:40px;height:40px;border-width:3px;margin:0 auto 12px"></div>
+      <div style="color:var(--text-muted);font-size:0.82rem">Loading…</div>
+    </div>
+  </div>
+
+  <!-- ═══════════ TOAST ═══════════ -->
+  <div id="toast-wrap"></div>
+
+  <!-- ═══════════════════════════════════════
+       AUTH SCREEN
+  ═══════════════════════════════════════ -->
+  <div id="screen-auth" class="screen active">
+    <div class="auth-bg"></div>
+    <div class="auth-wrap">
+      <div class="auth-logo">
+        <div class="auth-logo__ring">🕌</div>
+        <span class="auth-logo__arabic">مراقبة الصلاة</span>
+        <div class="auth-logo__sub">Salat Monitoring System</div>
+      </div>
+
+      <div class="card card--gold">
+        <div class="field">
+          <label class="field__label">Your Name</label>
+          <input class="field__input" type="text" id="auth-name" placeholder="Enter your full name" autocomplete="name"/>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label class="field__label">Mobile Number</label>
+          <div class="phone-prefix">
+            <span class="phone-prefix__code">🇧🇩 +880</span>
+            <input class="field__input" type="tel" id="auth-phone" placeholder="01XXXXXXXXX" maxlength="11" inputmode="numeric"/>
+          </div>
+        </div>
+        <div class="auth-divider">or</div>
+        <div class="field" style="margin-bottom:0">
+          <label class="field__label">WhatsApp Link (optional)</label>
+          <input class="field__input" type="url" id="auth-wa" placeholder="https://wa.me/880..."/>
+        </div>
+      </div>
+
+      <button class="btn btn--primary btn--full mt-4" id="btn-register" onclick="handleAuth()">
+        <span>Continue →</span>
+      </button>
+      <div class="text-center mt-2">
+        <span class="text-muted">Already registered? Just enter your phone number.</span>
+      </div>
+
+      <div style="margin-top:28px;text-align:center">
+        <button class="btn btn--ghost btn--sm" onclick="loginAsAdmin()">🔐 Admin / Imam Login</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       MAIN APP (after auth)
+  ═══════════════════════════════════════ -->
+  <div id="screen-main" style="display:none">
+
+    <!-- TOP NAV -->
+    <nav class="topnav">
+      <div class="topnav__brand">
+        <div class="topnav__icon">🕌</div>
+        <div>
+          <div class="topnav__title">مراقبة الصلاة</div>
+          <div class="topnav__sub">Salat Monitor</div>
+        </div>
+      </div>
+      <div class="topnav__actions">
+        <button class="btn-icon" onclick="toggleTheme()" title="Toggle theme" id="theme-btn">🌙</button>
+        <button class="btn-icon" onclick="logout()" title="Logout">🚪</button>
+      </div>
+    </nav>
+
+    <!-- SCREEN: HOME (Tracker + Streak) -->
+    <div id="screen-home" class="screen active">
+      <div class="container">
+
+        <!-- Prayer Time API Widget -->
+        <div class="card card--gold mb-4" id="prayertime-card">
+          <div class="section-hd">
+            <div class="section-hd__title">Prayer Times</div>
+            <div class="section-hd__arabic">مواقيت الصلاة</div>
+          </div>
+
+          <!-- Location row -->
+          <div class="location-row" onclick="refreshPrayerTimes(true)">
+            <div class="location-row__dot"></div>
+            <span id="location-label">Detecting location…</span>
+            <span style="margin-left:auto;font-size:11px;color:var(--gold)">↻ Refresh</span>
+          </div>
+
+          <!-- Next prayer countdown banner -->
+          <div class="next-prayer-banner" id="next-banner" style="display:none">
+            <div>
+              <div class="next-prayer-banner__label">Next Prayer</div>
+              <div class="next-prayer-banner__name" id="next-name">—</div>
+            </div>
+            <div class="next-prayer-banner__countdown" id="next-countdown">00:00:00</div>
+          </div>
+
+          <!-- 5-waqt time strip -->
+          <div class="prayer-times-strip" id="pt-strip">
+            <div style="color:var(--text-muted);font-size:0.82rem;padding:10px">Loading prayer times…</div>
+          </div>
+
+          <!-- Push notification toggle -->
+          <div style="margin-top:8px">
+            <div id="notif-status-bar" class="notif-status-bar notif-status-bar--default">
+              🔔 Enable notifications to get Adhan reminders
+            </div>
+            <button class="btn btn--ghost btn--sm btn--full" id="notif-enable-btn" onclick="requestNotifPermission()">
+              Enable Prayer Reminders
+            </button>
+          </div>
+        </div>
+
+        <!-- Greeting -->
+        <div class="greeting" id="greeting-card">
+          <div>
+            <div class="greeting__text" id="greeting-text">Good morning</div>
+            <div class="greeting__name" id="greeting-name">—</div>
+          </div>
+          <div class="greeting__arabic">السَّلامُ عَلَيْكُم</div>
+        </div>
+
+        <!-- 40-Day Streak -->
+        <div class="card card--gold mb-4" id="streak-card">
+          <div class="section-hd">
+            <div class="section-hd__title">40-Day Challenge</div>
+            <span class="label-tag">🔥 Streak</span>
+          </div>
+
+          <div class="streak-card">
+            <div class="streak-ring-wrap">
+              <svg class="streak-ring" viewBox="0 0 140 140">
+                <defs>
+                  <linearGradient id="streakGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#C9A84C"/>
+                    <stop offset="100%" stop-color="#3DA876"/>
+                  </linearGradient>
+                </defs>
+                <circle class="streak-ring__bg" cx="70" cy="70" r="58"/>
+                <circle class="streak-ring__fill" id="streakCircle"
+                        cx="70" cy="70" r="58"
+                        stroke-dasharray="364.4"
+                        stroke-dashoffset="364.4"/>
+              </svg>
+              <div class="streak-ring__text">
+                <span class="streak-ring__number" id="streak-num">0</span>
+                <span class="streak-ring__label">/ 40 days</span>
+              </div>
+            </div>
+
+            <div class="streak-meta">
+              <div class="streak-stat">
+                <div class="streak-stat__val" id="streak-mosque">0</div>
+                <div class="streak-stat__key">Mosque Days</div>
+              </div>
+              <div class="streak-stat">
+                <div class="streak-stat__val" id="streak-attend">0%</div>
+                <div class="streak-stat__key">Attendance</div>
+              </div>
+            </div>
+
+            <div class="streak-badges" id="streak-badges">
+              <span class="badge badge--muted">Log prayers to start</span>
+            </div>
+
+            <!-- 40 dots grid -->
+            <div class="day-grid" id="day-grid"></div>
+          </div>
+        </div>
+
+        <!-- Daily Waqt Tracker -->
+        <div class="card mb-4">
+          <div class="section-hd">
+            <div class="section-hd__title">Today's Prayers</div>
+            <div class="section-hd__arabic">صلاة اليوم</div>
+          </div>
+
+          <div class="field mb-4">
+            <label class="field__label">Date</label>
+            <input class="field__input" type="date" id="tracker-date"/>
+          </div>
+
+          <div class="waqt-grid" id="waqt-grid">
+            <!-- generated by JS -->
+          </div>
+
+          <div class="waqt-submit-bar mt-4">
+            <button class="btn btn--primary btn--full" onclick="submitAllWaqt()">
+              Save Today's Prayers
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SCREEN: DEEDS -->
+    <div id="screen-deeds" class="screen">
+      <div class="container">
+        <div class="card mb-4">
+          <div class="section-hd">
+            <div class="section-hd__title">Good Deeds Diary</div>
+            <div class="section-hd__arabic">دفتر الأعمال</div>
+          </div>
+          <div class="field">
+            <label class="field__label">Record a Good Deed</label>
+            <textarea class="field__input" id="deed-input" rows="3" placeholder="e.g. Helped a neighbour with groceries…"></textarea>
+          </div>
+          <button class="btn btn--primary btn--full" onclick="submitDeed()">Add to My Diary ✦</button>
+        </div>
+
+        <div id="deeds-timeline-wrap">
+          <div class="empty-state">
+            <span class="emoji">📜</span>
+            Your private diary is empty. Start recording.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN: COMMUNITY -->
+    <div id="screen-community" class="screen">
+      <div class="container gap-y">
+
+        <!-- Anonymous Report -->
+        <div class="card">
+          <div class="section-hd">
+            <div class="section-hd__title">Report an Issue</div>
+            <span class="label-tag">Anonymous</span>
+          </div>
+          <div class="anon-note">
+            🔒 Your identity is never recorded. This goes directly to the Imam.
+          </div>
+          <div class="field">
+            <label class="field__label">Issue Type</label>
+            <select class="field__input" id="report-type">
+              <option value="">Select category…</option>
+              <option value="Drug Abuse">💊 Drug Abuse</option>
+              <option value="Financial Crisis">💸 Financial Crisis</option>
+              <option value="Family Dispute">👨‍👩‍👧 Family Dispute</option>
+              <option value="Youth Misconduct">🧑 Youth Misconduct</option>
+              <option value="Community Neglect">🏘️ Community Neglect</option>
+              <option value="Mental Health">🧠 Mental Health Concern</option>
+              <option value="Other">📌 Other</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label class="field__label">Description</label>
+            <textarea class="field__input" id="report-desc" rows="3" placeholder="Describe the situation briefly…"></textarea>
+          </div>
+          <button class="btn btn--primary btn--full mt-4" onclick="submitReport()">Submit Anonymously →</button>
+        </div>
+
+        <!-- Live Chat -->
+        <div class="card">
+          <div class="section-hd">
+            <div class="section-hd__title">Ask the Imam</div>
+            <div class="section-hd__arabic">سؤال</div>
+          </div>
+
+          <div class="chat-thread" id="chat-thread">
+            <div class="empty-state">
+              <span class="emoji">💬</span>
+              No questions yet. Ask below.
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="field" style="margin-bottom:8px">
+            <textarea class="field__input" id="chat-input" rows="2" placeholder="Type your question…"></textarea>
+          </div>
+          <button class="btn btn--primary btn--full" onclick="submitChatQuestion()">Send Question →</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SCREEN: ADMIN -->
+    <div id="screen-admin" class="screen">
+      <div class="container--wide">
+
+        <!-- Gate (password protected with hashing) -->
+        <div id="admin-gate" class="admin-gate">
+          <div class="admin-gate__icon">🔐</div>
+          <div class="section-hd__title mb-4" style="margin-bottom:16px">Admin / Imam Panel</div>
+          <div class="card" style="max-width:340px;margin:0 auto">
+            <div class="field">
+              <label class="field__label">Admin PIN</label>
+              <div class="pin-input-wrap">
+                <input class="field__input" type="password" id="admin-pin"
+                       placeholder="Enter secure PIN" maxlength="20"
+                       oninput="onPinInput(this.value)"
+                       onkeydown="if(event.key==='Enter')unlockAdmin()"
+                       style="padding-right:44px"/>
+                <button class="pin-eye" onclick="togglePinVisibility()" id="pin-eye-btn" title="Show/hide">👁️</button>
+              </div>
+              <div class="pin-strength" id="pin-strength">
+                <div class="pin-strength__dot" id="ps1"></div>
+                <div class="pin-strength__dot" id="ps2"></div>
+                <div class="pin-strength__dot" id="ps3"></div>
+                <div class="pin-strength__dot" id="ps4"></div>
+              </div>
+              <div class="pin-hint" id="pin-hint">Enter PIN to unlock</div>
+              <div class="hash-display" id="pin-hash-display"></div>
+            </div>
+            <button class="btn btn--primary btn--full" onclick="unlockAdmin()">🔓 Unlock Panel</button>
+            <div style="margin-top:14px">
+              <details>
+                <summary style="font-size:0.75rem;color:var(--text-muted);cursor:pointer">⚙️ Set New PIN (Admin Setup)</summary>
+                <div style="margin-top:12px">
+                  <div class="field" style="margin-bottom:8px">
+                    <label class="field__label">New PIN</label>
+                    <input class="field__input" type="password" id="new-pin-input" placeholder="At least 6 characters"/>
+                  </div>
+                  <button class="btn btn--ghost btn--sm btn--full" onclick="saveNewPinHash()">Save New PIN Hash</button>
+                  <div class="hash-display show" id="stored-hash-display" style="margin-top:8px">
+                    <span style="color:var(--text-muted)">Stored hash: </span>
+                    <span id="stored-hash-text">Loading…</span>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel content (hidden until unlocked) -->
+        <div id="admin-panel" style="display:none; padding:0 0 20px;">
+          <div class="section-hd" style="margin-bottom:16px">
+            <div class="section-hd__title">Imam Dashboard</div>
+            <span class="label-tag">Admin</span>
+          </div>
+
+          <!-- Stats Row -->
+          <div class="stats-grid" id="admin-stats-grid">
+            <div class="stat-card"><div class="stat-card__val" id="stat-users">—</div><div class="stat-card__key">Total Members</div></div>
+            <div class="stat-card"><div class="stat-card__val" id="stat-logs">—</div><div class="stat-card__key">Prayer Logs</div></div>
+            <div class="stat-card"><div class="stat-card__val" id="stat-reports">—</div><div class="stat-card__key">Reports</div></div>
+            <div class="stat-card"><div class="stat-card__val" id="stat-chats">—</div><div class="stat-card__key">Questions</div></div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchAdminTab('members', this)">👤 Members</button>
+            <button class="tab-btn" onclick="switchAdminTab('charts', this)">📊 Charts</button>
+            <button class="tab-btn" onclick="switchAdminTab('reports', this)">📋 Reports</button>
+            <button class="tab-btn" onclick="switchAdminTab('qa', this)">💬 Q&A</button>
+            <button class="tab-btn" onclick="switchAdminTab('audit', this)">🗂️ Audit</button>
+          </div>
+
+          <!-- Members tab -->
+          <div class="tab-panel active" id="tab-members">
+            <div class="search-bar">
+              <span>🔍</span>
+              <input type="text" placeholder="Search members…" oninput="filterUsers(this.value)" id="user-search"/>
+            </div>
+            <div id="admin-user-list" class="user-list">
+              <div class="empty-state"><span class="emoji">⏳</span>Loading members…</div>
+            </div>
+          </div>
+
+          <!-- Charts tab -->
+          <div class="tab-panel" id="tab-charts">
+            <div class="chart-grid">
+              <div class="chart-card">
+                <div class="chart-card__title">🕌 Mosque vs Home vs Missed</div>
+                <div class="chart-wrap"><canvas id="chart-donut"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-card__title">📈 Daily Attendance (Last 14 Days)</div>
+                <div class="chart-wrap"><canvas id="chart-line"></canvas></div>
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card__title">👤 Top 10 Members by Streak</div>
+              <div class="chart-wrap chart-wrap--tall"><canvas id="chart-bar"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card__title">🕐 Waqt-wise Attendance Rate</div>
+              <div class="chart-wrap"><canvas id="chart-radar"></canvas></div>
+            </div>
+          </div>
+
+          <!-- Reports tab -->
+          <div class="tab-panel" id="tab-reports">
+            <div id="admin-reports-list">
+              <div class="empty-state"><span class="emoji">⏳</span>Loading reports…</div>
+            </div>
+          </div>
+
+          <!-- Q&A tab -->
+          <div class="tab-panel" id="tab-qa">
+            <div id="admin-qa-list">
+              <div class="empty-state"><span class="emoji">⏳</span>Loading questions…</div>
+            </div>
+          </div>
+
+          <!-- Audit tab -->
+          <div class="tab-panel" id="tab-audit">
+            <div id="admin-audit-list">
+              <div class="empty-state"><span class="emoji">⏳</span>Loading audit log…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottomnav">
+      <button class="bottomnav__item active" id="nav-home"      onclick="switchScreen('home',      this)"><span class="icon">🕌</span>Prayers</button>
+      <button class="bottomnav__item"        id="nav-deeds"     onclick="switchScreen('deeds',     this)"><span class="icon">📜</span>Deeds</button>
+      <button class="bottomnav__item"        id="nav-community" onclick="switchScreen('community', this)"><span class="icon">🤝</span>Community</button>
+      <button class="bottomnav__item"        id="nav-admin"     onclick="switchScreen('admin',     this)"><span class="icon">⚙️</span>Admin</button>
+    </nav>
+
+  </div><!-- /screen-main -->
+
+</div><!-- /app -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     SVG DEFS (hidden)
+═══════════════════════════════════════════════════════════ -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="streakGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C9A84C"/>
+      <stop offset="100%" stop-color="#3DA876"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════════
+const API_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+
+// Default hashed PIN (SHA-256 of "786786")
+// To change: enter new PIN in the Setup section, copy hash, store here
+const DEFAULT_PIN_HASH = 'b3b3b5e2e2c0e2cbf1e5e5c9b2f2b6c1e2e5f2b6e5c1e2f2b6e5c1e2f2b6e5'; // placeholder
+let STORED_PIN_HASH = localStorage.getItem('salat_admin_pin_hash') || null;
+
+// ═══════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════
+let SESSION        = null;
+let ALL_USERS_CACHE = [];
+let PRAYER_TIMES   = null;   // fetched from Aladhan API
+let COUNTDOWN_TIMER = null;
+let NOTIF_TIMERS   = [];
+let CHARTS         = {};     // Chart.js instances
+
+const WAQT_LIST = [
+  { key:'Fajr',    arabic:'الفجر',  icon:'🌅' },
+  { key:'Dhuhr',   arabic:'الظهر',  icon:'☀️' },
+  { key:'Asr',     arabic:'العصر',  icon:'🌤️' },
+  { key:'Maghrib', arabic:'المغرب', icon:'🌇' },
+  { key:'Isha',    arabic:'العشاء', icon:'🌙' },
+];
+
+const STATUS_MAP = {
+  mosque:  { label:'Mosque',  icon:'🕌', value:'1' },
+  home:    { label:'Home',    icon:'🏠', value:'2' },
+  travel:  { label:'Travel',  icon:'✈️', value:'3' },
+  missed:  { label:'Missed',  icon:'❌', value:'0' },
+};
+
+// ═══════════════════════════════════════════════════════════
+//  SHA-256 HASHING (Web Crypto API — no external library)
+// ═══════════════════════════════════════════════════════════
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PIN MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+function onPinInput(val) {
+  const dots = [
+    document.getElementById('ps1'),
+    document.getElementById('ps2'),
+    document.getElementById('ps3'),
+    document.getElementById('ps4'),
+  ];
+  const len = val.length;
+  let strength = 0;
+  if (len >= 4)  strength = 1;
+  if (len >= 6)  strength = 2;
+  if (len >= 8)  strength = 3;
+  if (len >= 10 && /[A-Za-z]/.test(val) && /\d/.test(val)) strength = 4;
+
+  const colors = ['','#C0444A','#C9A84C','#2D7A5A','#3DA876'];
+  dots.forEach((d, i) => {
+    d.style.background = i < strength ? colors[strength] : 'var(--bg-elevated)';
+  });
+
+  const hints = ['', 'Weak — too short', 'Fair — add more characters', 'Good', 'Strong ✓'];
+  document.getElementById('pin-hint').textContent = hints[strength] || 'Enter PIN';
+}
+
+function togglePinVisibility() {
+  const inp = document.getElementById('admin-pin');
+  const btn = document.getElementById('pin-eye-btn');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else                         { inp.type = 'password'; btn.textContent = '👁️'; }
+}
+
+async function unlockAdmin() {
+  const pin = document.getElementById('admin-pin').value;
+  if (!pin) { toast('Enter your PIN', 'err'); return; }
+
+  const hash = await sha256(pin);
+
+  // Show hash visually for debugging (in production remove this)
+  document.getElementById('pin-hash-display').textContent = 'SHA-256: ' + hash;
+  document.getElementById('pin-hash-display').classList.add('show');
+
+  // Compare with stored hash
+  const savedHash = localStorage.getItem('salat_admin_pin_hash');
+  if (!savedHash) {
+    // First time: no hash stored yet — bootstrap with default PIN "786786"
+    const defaultHash = await sha256('786786');
+    if (hash !== defaultHash) { toast('Wrong PIN. Default is 786786', 'err'); return; }
+    localStorage.setItem('salat_admin_pin_hash', defaultHash);
+  } else {
+    if (hash !== savedHash) { toast('Incorrect PIN ✗', 'err'); return; }
+  }
+
+  document.getElementById('admin-gate').style.display  = 'none';
+  document.getElementById('admin-panel').style.display = 'block';
+  loadAdminData();
+  updateStoredHashDisplay();
+}
+
+async function saveNewPinHash() {
+  const newPin = document.getElementById('new-pin-input').value.trim();
+  if (newPin.length < 4) { toast('PIN must be at least 4 characters', 'err'); return; }
+  const hash = await sha256(newPin);
+  localStorage.setItem('salat_admin_pin_hash', hash);
+  toast('✓ New PIN saved securely', 'ok');
+  updateStoredHashDisplay();
+  document.getElementById('new-pin-input').value = '';
+}
+
+async function updateStoredHashDisplay() {
+  const stored = localStorage.getItem('salat_admin_pin_hash') || '—';
+  const el = document.getElementById('stored-hash-text');
+  if (el) el.textContent = stored.substring(0, 20) + '…';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════════════
+function toast(msg, type='ok') {
+  const el = document.createElement('div');
+  el.className = `toast toast--${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-wrap').appendChild(el);
+  setTimeout(() => el.remove(), 2800);
+}
+
+function loading(show) {
+  document.getElementById('loadingOverlay').classList.toggle('show', show);
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleString('en-BD', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }); }
+  catch { return iso; }
+}
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function saveSession(data) {
+  SESSION = data;
+  localStorage.setItem('salat_session', JSON.stringify(data));
+}
+
+function loadSession() {
+  try {
+    const s = localStorage.getItem('salat_session');
+    if (s) SESSION = JSON.parse(s);
+  } catch {}
+}
+
+function greetingText() {
+  const h = new Date().getHours();
+  if (h < 6)  return 'Rise for Fajr 🌙';
+  if (h < 12) return 'Good morning ☀️';
+  if (h < 15) return 'Good afternoon 🌤';
+  if (h < 18) return 'Good evening 🌇';
+  return 'Good night 🌙';
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  API HELPERS
+// ═══════════════════════════════════════════════════════════
+async function apiGet(params) {
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(`${API_URL}?${qs}`, { method:'GET', redirect:'follow' });
+  return res.json();
+}
+
+async function apiPost(body) {
+  const res = await fetch(API_URL, {
+    method:'POST', redirect:'follow',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PRAYER TIME API (Aladhan.com — free, no key needed)
+// ═══════════════════════════════════════════════════════════
+const PT_ICONS = { Fajr:'🌅', Sunrise:'🌄', Dhuhr:'☀️', Asr:'🌤️', Sunset:'🌆', Maghrib:'🌇', Isha:'🌙', Imsak:'🌒', Midnight:'🕛' };
+const PT_SHOW  = ['Fajr','Dhuhr','Asr','Maghrib','Isha'];
+
+async function refreshPrayerTimes(forceGeo = false) {
+  const cached = !forceGeo && localStorage.getItem('salat_pt_cache');
+  const cachedDay = localStorage.getItem('salat_pt_day');
+  if (cached && cachedDay === todayStr()) {
+    PRAYER_TIMES = JSON.parse(cached);
+    renderPrayerTimes();
+    return;
+  }
+
+  document.getElementById('location-label').textContent = 'Detecting location…';
+  try {
+    const pos = await new Promise((res, rej) =>
+      navigator.geolocation.getCurrentPosition(res, rej, { timeout:8000 }));
+    const { latitude: lat, longitude: lng } = pos.coords;
+
+    // Reverse geocode for city name
+    const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+    const geo    = await geoRes.json();
+    const city   = geo.address?.city || geo.address?.town || geo.address?.county || 'Your Location';
+    document.getElementById('location-label').textContent = `📍 ${city}`;
+
+    // Aladhan Prayer Times API
+    const today  = new Date();
+    const dd = String(today.getDate()).padStart(2,'0');
+    const mm = String(today.getMonth()+1).padStart(2,'0');
+    const yyyy = today.getFullYear();
+    const ptRes  = await fetch(`https://api.aladhan.com/v1/timings/${dd}-${mm}-${yyyy}?latitude=${lat}&longitude=${lng}&method=2`);
+    const ptData = await ptRes.json();
+
+    if (ptData.code === 200) {
+      PRAYER_TIMES = ptData.data.timings;
+      localStorage.setItem('salat_pt_cache', JSON.stringify(PRAYER_TIMES));
+      localStorage.setItem('salat_pt_day',   todayStr());
+      renderPrayerTimes();
+      scheduleNotifications();
+    }
+  } catch (err) {
+    document.getElementById('location-label').textContent = '📍 Dhaka (Default)';
+    // Fallback: Dhaka hardcoded
+    await fetchPrayerTimesByCity('Dhaka', 'Bangladesh');
+  }
+}
+
+async function fetchPrayerTimesByCity(city, country) {
+  try {
+    const today  = new Date();
+    const dd = String(today.getDate()).padStart(2,'0');
+    const mm = String(today.getMonth()+1).padStart(2,'0');
+    const yyyy = today.getFullYear();
+    const res  = await fetch(`https://api.aladhan.com/v1/timingsByCity/${dd}-${mm}-${yyyy}?city=${city}&country=${country}&method=2`);
+    const data = await res.json();
+    if (data.code === 200) {
+      PRAYER_TIMES = data.data.timings;
+      localStorage.setItem('salat_pt_cache', JSON.stringify(PRAYER_TIMES));
+      localStorage.setItem('salat_pt_day',   todayStr());
+      renderPrayerTimes();
+      scheduleNotifications();
+    }
+  } catch {}
+}
+
+function parseTime(timeStr) {
+  // timeStr format: "05:12" or "05:12 (BST)"
+  const clean = timeStr.split(' ')[0];
+  const [h, m] = clean.split(':').map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d;
+}
+
+function renderPrayerTimes() {
+  if (!PRAYER_TIMES) return;
+  const now  = new Date();
+  const strip = document.getElementById('pt-strip');
+
+  // Find current + next waqt
+  let currentWaqt = null;
+  let nextWaqt    = null;
+  let nextTime    = null;
+
+  const times = PT_SHOW.map(name => ({ name, time: parseTime(PRAYER_TIMES[name]) }));
+
+  for (let i = 0; i < times.length; i++) {
+    const t    = times[i];
+    const next = times[i + 1];
+    if (now >= t.time && (!next || now < next.time)) {
+      currentWaqt = t.name;
+      if (next) { nextWaqt = next.name; nextTime = next.time; }
+      else { nextWaqt = times[0].name; nextTime = new Date(times[0].time.getTime() + 86400000); }
+      break;
+    }
+  }
+  if (!currentWaqt) { currentWaqt = null; nextWaqt = times[0].name; nextTime = times[0].time; }
+
+  strip.innerHTML = times.map(({ name, time }) => {
+    const hh = String(time.getHours()).padStart(2,'0');
+    const mm = String(time.getMinutes()).padStart(2,'0');
+    const isActive = name === currentWaqt || (!currentWaqt && name === times[0].name && now < times[0].time);
+    return `<div class="pt-card ${isActive ? 'active-waqt' : ''}">
+      <div class="pt-card__name">${name}</div>
+      <div class="pt-card__icon">${PT_ICONS[name] || '🕐'}</div>
+      <div class="pt-card__time">${hh}:${mm}</div>
+    </div>`;
+  }).join('');
+
+  // Next prayer banner
+  const banner = document.getElementById('next-banner');
+  banner.style.display = 'flex';
+  document.getElementById('next-name').textContent = nextWaqt;
+  document.getElementById('next-banner').style.display = 'flex';
+
+  // Start countdown
+  if (COUNTDOWN_TIMER) clearInterval(COUNTDOWN_TIMER);
+  function tick() {
+    const diff = nextTime - new Date();
+    if (diff <= 0) { refreshPrayerTimes(); return; }
+    const h = String(Math.floor(diff / 3600000)).padStart(2,'0');
+    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2,'0');
+    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2,'0');
+    document.getElementById('next-countdown').textContent = `${h}:${m}:${s}`;
+  }
+  tick();
+  COUNTDOWN_TIMER = setInterval(tick, 1000);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PUSH NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════
+const NOTIF_SETTINGS_KEY = 'salat_notif_settings';
+
+function getNotifSettings() {
+  try { return JSON.parse(localStorage.getItem(NOTIF_SETTINGS_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function saveNotifSettings(s) { localStorage.setItem(NOTIF_SETTINGS_KEY, JSON.stringify(s)); }
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) { toast('Notifications not supported in this browser', 'err'); return; }
+  const perm = await Notification.requestPermission();
+  updateNotifStatusBar(perm);
+  if (perm === 'granted') {
+    toast('✓ Prayer reminders enabled!', 'ok');
+    scheduleNotifications();
+    // Save default settings: all waqts enabled
+    const settings = {};
+    PT_SHOW.forEach(w => { settings[w] = true; });
+    settings.minutesBefore = 5;
+    saveNotifSettings(settings);
+    renderNotifSettings();
+  } else {
+    toast('Notifications blocked. Enable in browser settings.', 'err');
+  }
+}
+
+function updateNotifStatusBar(perm) {
+  const bar = document.getElementById('notif-status-bar');
+  const btn = document.getElementById('notif-enable-btn');
+  if (!bar) return;
+  bar.className = 'notif-status-bar notif-status-bar--' + (perm || Notification.permission);
+  if (perm === 'granted' || Notification.permission === 'granted') {
+    bar.textContent = '✅ Prayer notifications are ON';
+    btn.style.display = 'none';
+  } else if (perm === 'denied' || Notification.permission === 'denied') {
+    bar.textContent = '🚫 Notifications blocked — enable in browser settings';
+    btn.style.display = 'none';
+  } else {
+    bar.textContent = '🔔 Tap below to receive Adhan reminders';
+    btn.style.display = '';
+  }
+}
+
+function scheduleNotifications() {
+  if (Notification.permission !== 'granted') return;
+  if (!PRAYER_TIMES) return;
+
+  // Clear old timers
+  NOTIF_TIMERS.forEach(t => clearTimeout(t));
+  NOTIF_TIMERS = [];
+
+  const settings  = getNotifSettings();
+  const minBefore = (settings.minutesBefore || 5) * 60 * 1000;
+  const now       = Date.now();
+
+  PT_SHOW.forEach(waqt => {
+    if (settings[waqt] === false) return;
+    const t   = parseTime(PRAYER_TIMES[waqt]);
+    const ms  = t.getTime() - minBefore - now;
+    if (ms <= 0) return;
+    const timer = setTimeout(() => {
+      new Notification(`🕌 Time for ${waqt}`, {
+        body: `${waqt} prayer starts in ${settings.minutesBefore || 5} minutes. اللَّهُ أَكْبَر`,
+        icon: 'https://cdn-icons-png.flaticon.com/512/3159/3159066.png',
+        badge:'https://cdn-icons-png.flaticon.com/512/3159/3159066.png',
+        tag: `salat-${waqt}`,
+        renotify: true,
+      });
+    }, ms);
+    NOTIF_TIMERS.push(timer);
+  });
+}
+
+function renderNotifSettings() {
+  // Inject notification settings into home screen (after prayer times card)
+  const existing = document.getElementById('notif-settings-card');
+  if (existing) existing.remove();
+  if (Notification.permission !== 'granted') return;
+
+  const settings = getNotifSettings();
+  const card = document.createElement('div');
+  card.id = 'notif-settings-card';
+  card.className = 'card mb-4';
+  card.innerHTML = `
+    <div class="section-hd">
+      <div class="section-hd__title">Reminder Settings</div>
+      <span class="label-tag">🔔 Notifications</span>
+    </div>
+    <div class="field mb-4">
+      <label class="field__label">Alert me before prayer (minutes)</label>
+      <select class="field__input" id="notif-min-select" onchange="saveNotifMin(this.value)">
+        <option value="5"  ${(settings.minutesBefore||5)==5?'selected':''}>5 minutes before</option>
+        <option value="10" ${settings.minutesBefore==10?'selected':''}>10 minutes before</option>
+        <option value="15" ${settings.minutesBefore==15?'selected':''}>15 minutes before</option>
+        <option value="30" ${settings.minutesBefore==30?'selected':''}>30 minutes before</option>
+      </select>
+    </div>
+    ${PT_SHOW.map(w => `
+      <div class="notif-row">
+        <div class="notif-row__info">
+          <div class="notif-row__title">${PT_ICONS[w]||'🕐'} ${w}</div>
+          <div class="notif-row__sub">${PRAYER_TIMES?parseTime(PRAYER_TIMES[w]).toLocaleTimeString('en-BD',{hour:'2-digit',minute:'2-digit'}):'—'}</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" ${settings[w]!==false?'checked':''} onchange="toggleNotif('${w}',this.checked)"/>
+          <div class="toggle__track"><div class="toggle__thumb"></div></div>
+        </label>
+      </div>
+    `).join('')}
+  `;
+
+  // Insert after prayer-times-card
+  const ref = document.getElementById('prayertime-card');
+  ref.parentNode.insertBefore(card, ref.nextSibling);
+}
+
+function toggleNotif(waqt, enabled) {
+  const s = getNotifSettings();
+  s[waqt] = enabled;
+  saveNotifSettings(s);
+  scheduleNotifications();
+  toast(`${waqt} reminder ${enabled ? 'on' : 'off'}`, 'info');
+}
+
+function saveNotifMin(val) {
+  const s = getNotifSettings();
+  s.minutesBefore = parseInt(val);
+  saveNotifSettings(s);
+  scheduleNotifications();
+  toast(`Reminders set ${val} min before prayer`, 'ok');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  THEME
+// ═══════════════════════════════════════════════════════════
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.dataset.theme === 'dark';
+  html.dataset.theme = isDark ? 'light' : 'dark';
+  document.getElementById('theme-btn').textContent = isDark ? '🌙' : '☀️';
+  localStorage.setItem('salat_theme', html.dataset.theme);
+  // Re-render charts with new theme colors
+  if (Object.keys(CHARTS).length) setTimeout(rebuildCharts, 100);
+}
+
+function applyTheme() {
+  const t = localStorage.getItem('salat_theme') || 'dark';
+  document.documentElement.dataset.theme = t;
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = t === 'dark' ? '🌙' : '☀️';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════════════════════
+async function handleAuth() {
+  const name  = document.getElementById('auth-name').value.trim();
+  const phone = document.getElementById('auth-phone').value.trim();
+  const wa    = document.getElementById('auth-wa').value.trim();
+
+  if (!phone || phone.length < 10) { toast('Enter a valid phone number', 'err'); return; }
+
+  loading(true);
+  try {
+    const check = await apiGet({ action:'getUsers' });
+    if (check.success) {
+      const existing = check.data.find(u => u.phone === phone || u.phone === '0'+phone);
+      if (existing) {
+        saveSession({ ...existing, is_admin:false });
+        toast(`Welcome back, ${existing.name}!`, 'ok');
+        enterApp(); return;
+      }
+    }
+    if (!name) { loading(false); toast('Enter your name to register', 'err'); return; }
+    const res = await apiPost({ action:'registerUser', name, phone, whatsapp_link:wa });
+    if (!res.success) { toast(res.message || 'Registration failed', 'err'); return; }
+    saveSession({ ...res.data, is_admin:false });
+    toast(`Welcome, ${name}! ✨`, 'ok');
+    enterApp();
+  } catch { toast('Connection error. Check your network.', 'err'); }
+  finally   { loading(false); }
+}
+
+function loginAsAdmin() {
+  saveSession({ user_id:'admin', name:'Imam / Admin', phone:'', whatsapp_link:'', is_admin:true });
+  toast('Switched to Admin session', 'info');
+  enterApp();
+  setTimeout(() => switchScreen('admin', document.getElementById('nav-admin')), 300);
+}
+
+function enterApp() {
+  document.getElementById('screen-auth').style.display = 'none';
+  document.getElementById('screen-main').style.display = 'block';
+  document.getElementById('greeting-name').textContent = SESSION.name;
+  document.getElementById('greeting-text').textContent = greetingText();
+  initWaqtGrid();
+  loadStreakData();
+  loadDeedsTimeline();
+  loadChatThread();
+  // Prayer times + notifications
+  refreshPrayerTimes();
+  updateNotifStatusBar();
+  if (Notification.permission === 'granted') renderNotifSettings();
+  updateStoredHashDisplay();
+}
+
+function logout() {
+  if (COUNTDOWN_TIMER) clearInterval(COUNTDOWN_TIMER);
+  NOTIF_TIMERS.forEach(t => clearTimeout(t));
+  localStorage.removeItem('salat_session');
+  SESSION = null;
+  document.getElementById('screen-auth').style.display = 'flex';
+  document.getElementById('screen-main').style.display = 'none';
+  document.getElementById('auth-name').value = '';
+  document.getElementById('auth-phone').value = '';
+  toast('Logged out', 'info');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SCREEN NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function switchScreen(name, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.bottomnav__item').forEach(b => b.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'community') loadChatThread();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  WAQT TRACKER
+// ═══════════════════════════════════════════════════════════
+function initWaqtGrid() {
+  document.getElementById('tracker-date').value = todayStr();
+  const grid = document.getElementById('waqt-grid');
+  grid.innerHTML = WAQT_LIST.map(waqt => `
+    <div class="waqt-row" id="waqt-row-${waqt.key}">
+      <div class="waqt-row__header">
+        <div class="waqt-row__name"><div class="dot"></div>${waqt.icon} ${waqt.key}</div>
+        <span class="waqt-row__arabic">${waqt.arabic}</span>
+      </div>
+      <div class="waqt-options">
+        ${Object.entries(STATUS_MAP).map(([val, s]) => `
+          <input type="radio" class="waqt-option" name="waqt-${waqt.key}" id="waqt-${waqt.key}-${val}" value="${val}"
+                 onchange="onWaqtChange('${waqt.key}', '${val}')"/>
+          <label for="waqt-${waqt.key}-${val}">
+            <span class="opt-icon">${s.icon}</span>${s.label}
+          </label>
+        `).join('')}
+      </div>
+      <div class="reason-box" id="reason-${waqt.key}">
+        <input class="field__input" type="text" id="reason-input-${waqt.key}" placeholder="Brief reason (required)…"/>
+      </div>
+    </div>
+  `).join('');
+}
+
+function onWaqtChange(waqt, val) {
+  const row    = document.getElementById(`waqt-row-${waqt}`);
+  const reason = document.getElementById(`reason-${waqt}`);
+  row.classList.remove('logged','missed');
+  if (val === 'mosque') row.classList.add('logged');
+  if (val === 'missed') row.classList.add('missed');
+  reason.classList.toggle('show', ['home','travel','missed'].includes(val));
+}
+
+async function submitAllWaqt() {
+  if (!SESSION) return;
+  const date = document.getElementById('tracker-date').value;
+  if (!date) { toast('Pick a date', 'err'); return; }
+  const prayers = [];
+  for (const waqt of WAQT_LIST) {
+    const sel = document.querySelector(`input[name="waqt-${waqt.key}"]:checked`);
+    if (!sel) { toast(`Select status for ${waqt.key}`, 'err'); return; }
+    const status = STATUS_MAP[sel.value];
+    let reason = '';
+    if (['home','travel','missed'].includes(sel.value)) {
+      reason = document.getElementById(`reason-input-${waqt.key}`).value.trim();
+      if (!reason) { toast(`Add a reason for ${waqt.key}`, 'err'); return; }
+    }
+    prayers.push({ waqt:waqt.key, status:status.value, reason });
+  }
+  loading(true);
+  try {
+    const res = await apiPost({ action:'submitBulkSalah', user_id:SESSION.user_id, date, prayers });
+    if (!res.success) { toast(res.message, 'err'); return; }
+    toast(`✓ ${res.data.saved.length} prayers saved!`, 'ok');
+    updateStreakDisplay(res.data.streak);
+  } catch { toast('Failed to save. Try again.', 'err'); }
+  finally   { loading(false); }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  STREAK
+// ═══════════════════════════════════════════════════════════
+async function loadStreakData() {
+  if (!SESSION || SESSION.is_admin) return;
+  try {
+    const res = await apiGet({ action:'getStreak', user_id:SESSION.user_id });
+    if (res.success) updateStreakDisplay(res.data);
+  } catch {}
+}
+
+function updateStreakDisplay(data) {
+  if (!data) return;
+  const streak   = data.streak || 0;
+  const mosqDays = data.total_mosque_days || 0;
+
+  document.getElementById('streak-num').textContent    = streak;
+  document.getElementById('streak-mosque').textContent = mosqDays;
+  document.getElementById('streak-attend').textContent = Math.round(mosqDays / 40 * 100) + '%';
+
+  const circ   = document.getElementById('streakCircle');
+  const offset = 364.4 - (Math.min(streak, 40) / 40) * 364.4;
+  circ.style.strokeDashoffset = offset;
+
+  const badgesEl = document.getElementById('streak-badges');
+  const badges = [];
+  if (streak >= 40)      badges.push(['badge--gold',  '🏆 40-Day Champion!']);
+  else if (streak >= 30) badges.push(['badge--gold',  '⭐ 30-Day Warrior']);
+  else if (streak >= 14) badges.push(['badge--green', '🔥 2-Week Streak']);
+  else if (streak >= 7)  badges.push(['badge--green', '✨ 1-Week Streak']);
+  else if (streak > 0)   badges.push(['badge--muted', `${streak} days going`]);
+  else                   badges.push(['badge--muted', '0-day streak — Start today']);
+  badgesEl.innerHTML = badges.map(([cls,txt]) => `<span class="badge ${cls}">${txt}</span>`).join('');
+
+  const grid     = document.getElementById('day-grid');
+  const doneDays = new Set(data.mosque_days || []);
+  const today    = todayStr();
+  grid.innerHTML = Array.from({length:40}, (_,i) => {
+    const d  = new Date(); d.setDate(d.getDate() - (39 - i));
+    const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const cls = ds === today ? 'today' : doneDays.has(ds) ? 'done' : '';
+    return `<div class="day-dot ${cls}" title="${ds}"></div>`;
+  }).join('');
+}
+
+
+// ═══════════════════════════════════════════════════════════
+//  GOOD DEEDS
+// ═══════════════════════════════════════════════════════════
+async function submitDeed() {
+  const text = document.getElementById('deed-input').value.trim();
+  if (!text) { toast('Write something first', 'err'); return; }
+  loading(true);
+  try {
+    const res = await apiPost({ action:'submitGoodDeed', user_id:SESSION.user_id, deed_text:text });
+    if (!res.success) { toast(res.message, 'err'); return; }
+    toast('✓ Deed recorded', 'ok');
+    document.getElementById('deed-input').value = '';
+    loadDeedsTimeline();
+  } catch { toast('Failed to save', 'err'); }
+  finally { loading(false); }
+}
+
+async function loadDeedsTimeline() {
+  if (!SESSION || SESSION.is_admin) return;
+  const wrap = document.getElementById('deeds-timeline-wrap');
+  try {
+    const res = await apiGet({ action:'getGoodDeeds', user_id:SESSION.user_id });
+    if (!res.success || !res.data.length) {
+      wrap.innerHTML = `<div class="empty-state"><span class="emoji">📜</span>Your private diary is empty. Start recording.</div>`;
+      return;
+    }
+    wrap.innerHTML = `<div class="deeds-timeline">${[...res.data].reverse().map(d => `
+      <div class="deed-item">
+        <div class="deed-item__dot">✦</div>
+        <div class="deed-item__body">
+          <div class="deed-item__text">${escHtml(d.deed_text)}</div>
+          <div class="deed-item__time">${fmtDate(d.timestamp)}</div>
+          <div class="deed-item__actions">
+            <button class="btn btn--danger btn--sm" onclick="deleteDeed('${d.deed_id}')">Delete</button>
+          </div>
+        </div>
+      </div>
+    `).join('')}</div>`;
+  } catch { wrap.innerHTML = `<div class="empty-state">Failed to load</div>`; }
+}
+
+async function deleteDeed(deed_id) {
+  if (!confirm('Delete this deed entry?')) return;
+  loading(true);
+  try {
+    const res = await apiPost({ action:'deleteGoodDeed', deed_id, modified_by:SESSION.user_id });
+    if (!res.success) { toast(res.message, 'err'); return; }
+    toast('Deleted', 'info');
+    loadDeedsTimeline();
+  } catch { toast('Failed', 'err'); }
+  finally { loading(false); }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SOCIAL REPORT
+// ═══════════════════════════════════════════════════════════
+async function submitReport() {
+  const type = document.getElementById('report-type').value;
+  const desc = document.getElementById('report-desc').value.trim();
+  if (!type) { toast('Select an issue type', 'err'); return; }
+  if (!desc)  { toast('Add a description', 'err'); return; }
+  loading(true);
+  try {
+    const res = await apiPost({ action:'submitSocialReport', issue_type:type, description:desc });
+    if (!res.success) { toast(res.message, 'err'); return; }
+    toast('✓ Report submitted anonymously', 'ok');
+    document.getElementById('report-type').value = '';
+    document.getElementById('report-desc').value = '';
+  } catch { toast('Failed to submit', 'err'); }
+  finally { loading(false); }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LIVE CHAT
+// ═══════════════════════════════════════════════════════════
+async function submitChatQuestion() {
+  const text = document.getElementById('chat-input').value.trim();
+  if (!text) { toast('Type your question first', 'err'); return; }
+  loading(true);
+  try {
+    const res = await apiPost({ action:'submitChatQuestion', user_id:SESSION.user_id, question:text });
+    if (!res.success) { toast(res.message, 'err'); return; }
+    toast('✓ Question sent to Imam', 'ok');
+    document.getElementById('chat-input').value = '';
+    loadChatThread();
+  } catch { toast('Failed', 'err'); }
+  finally { loading(false); }
+}
+
+async function loadChatThread() {
+  if (!SESSION || SESSION.is_admin) return;
+  const thread = document.getElementById('chat-thread');
+  try {
+    const res = await apiGet({ action:'getLiveChat', user_id:SESSION.user_id });
+    if (!res.success || !res.data.length) {
+      thread.innerHTML = `<div class="empty-state"><span class="emoji">💬</span>No questions yet. Ask below.</div>`; return;
+    }
+    thread.innerHTML = res.data.map(c => `
+      <div class="chat-bubble chat-bubble--question">
+        ${escHtml(c.question)}
+        <div class="chat-bubble__meta">${fmtDate(c.timestamp)}</div>
+      </div>
+      ${c.is_replied && c.is_replied !== 'false'
+        ? `<div class="chat-bubble chat-bubble--answer">${escHtml(c.answer)}<div class="chat-bubble__meta">✓ Imam replied</div></div>`
+        : `<div class="chat-pending"><div class="chat-dots"><span></span><span></span><span></span></div>Waiting for reply…</div>`}
+    `).join('');
+    thread.scrollTop = thread.scrollHeight;
+  } catch {}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ADMIN — LOAD DATA
+// ═══════════════════════════════════════════════════════════
+async function loadAdminData() {
+  loading(true);
+  try {
+    const [usersRes, logsRes, reportsRes, chatsRes] = await Promise.all([
+      apiGet({ action:'getUsers' }),
+      apiGet({ action:'getSalahLogs' }),
+      apiGet({ action:'getSocialReports' }),
+      apiGet({ action:'getLiveChat' }),
+    ]);
+    const users   = usersRes.success   ? usersRes.data   : [];
+    const logs    = logsRes.success    ? logsRes.data    : [];
+    const reports = reportsRes.success ? reportsRes.data : [];
+    const chats   = chatsRes.success   ? chatsRes.data   : [];
+
+    ALL_USERS_CACHE = users;
+    document.getElementById('stat-users').textContent   = users.length;
+    document.getElementById('stat-logs').textContent    = logs.length;
+    document.getElementById('stat-reports').textContent = reports.length;
+    document.getElementById('stat-chats').textContent   = chats.length;
+
+    renderUserList(users, logs);
+    renderAdminReports(reports);
+    renderAdminQA(chats);
+    loadAdminAudit();
+    buildCharts(users, logs);
+  } catch (e) {
+    toast('Failed to load admin data', 'err');
+    console.error(e);
+  } finally { loading(false); }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ADMIN — CHARTS (Chart.js)
+// ═══════════════════════════════════════════════════════════
+function chartDefaults() {
+  const isDark = document.documentElement.dataset.theme !== 'light';
+  return {
+    gridColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.07)',
+    textColor: isDark ? '#9A9590' : '#5C5C66',
+  };
+}
+
+function destroyChart(id) {
+  if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; }
+}
+
+function rebuildCharts() { if (ALL_USERS_CACHE.length) loadAdminData(); }
+
+function buildCharts(users, logs) {
+  const { gridColor, textColor } = chartDefaults();
+  Chart.defaults.color = textColor;
+
+  // 1. DONUT: Prayer status breakdown
+  destroyChart('donut');
+  const statusCounts = { '1':0, '2':0, '3':0, '0':0 };
+  logs.forEach(l => { if (statusCounts[l.status] !== undefined) statusCounts[l.status]++; });
+  CHARTS.donut = new Chart(document.getElementById('chart-donut'), {
+    type:'doughnut',
+    data:{
+      labels:['Mosque','Home','Travel','Missed'],
+      datasets:[{
+        data:[statusCounts['1'],statusCounts['2'],statusCounts['3'],statusCounts['0']],
+        backgroundColor:['#2D7A5A','#C9A84C','#4A6FA5','#C0444A'],
+        borderColor:'transparent', hoverOffset:6,
+      }],
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{ padding:12, font:{ size:11 } } } },
+      cutout:'65%',
+    },
+  });
+
+  // 2. LINE: Daily mosque % last 14 days
+  destroyChart('line');
+  const days14 = Array.from({length:14}, (_,i) => {
+    const d = new Date(); d.setDate(d.getDate() - (13-i));
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  });
+  const lineData = days14.map(date => {
+    const dl = logs.filter(l => String(l.date).substring(0,10) === date);
+    if (!dl.length) return null;
+    return Math.round(dl.filter(l=>String(l.status)==='1').length / dl.length * 100);
+  });
+  CHARTS.line = new Chart(document.getElementById('chart-line'), {
+    type:'line',
+    data:{
+      labels: days14.map(d=>d.slice(5)),
+      datasets:[{
+        label:'Mosque %', data:lineData,
+        borderColor:'#C9A84C', backgroundColor:'rgba(201,168,76,0.08)',
+        tension:0.4, fill:true, pointBackgroundColor:'#C9A84C',
+        pointRadius:4, pointHoverRadius:6, spanGaps:true,
+      }],
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        y:{ min:0, max:100, grid:{ color:gridColor }, ticks:{ callback:v=>v+'%' } },
+        x:{ grid:{ color:gridColor }, ticks:{ font:{ size:10 } } },
+      },
+    },
+  });
+
+  // 3. BAR: Top 10 members by mosque log count
+  destroyChart('bar');
+  const userLogMap = {};
+  logs.filter(l=>String(l.status)==='1').forEach(l=>{
+    userLogMap[l.user_id]=(userLogMap[l.user_id]||0)+1;
+  });
+  const top10 = users
+    .map(u=>({ name:u.name, count:userLogMap[u.user_id]||0 }))
+    .sort((a,b)=>b.count-a.count).slice(0,10);
+  CHARTS.bar = new Chart(document.getElementById('chart-bar'), {
+    type:'bar',
+    data:{
+      labels:top10.map(u=>u.name.split(' ')[0]),
+      datasets:[{
+        label:'Mosque Prayers', data:top10.map(u=>u.count),
+        backgroundColor:top10.map((_,i)=>i===0?'#C9A84C':i===1?'#8A7030':i===2?'#5A4A20':'rgba(201,168,76,0.3)'),
+        borderRadius:6, borderSkipped:false,
+      }],
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        y:{ grid:{ color:gridColor }, beginAtZero:true },
+        x:{ grid:{ display:false }, ticks:{ font:{ size:11 } } },
+      },
+    },
+  });
+
+  // 4. RADAR: Per-waqt attendance rate
+  destroyChart('radar');
+  const waqtStats = {};
+  WAQT_LIST.forEach(w=>{ waqtStats[w.key]={ total:0, mosque:0 }; });
+  logs.forEach(l=>{
+    if (waqtStats[l.waqt]) {
+      waqtStats[l.waqt].total++;
+      if (String(l.status)==='1') waqtStats[l.waqt].mosque++;
+    }
+  });
+  CHARTS.radar = new Chart(document.getElementById('chart-radar'), {
+    type:'radar',
+    data:{
+      labels: WAQT_LIST.map(w=>`${w.icon} ${w.key}`),
+      datasets:[{
+        label:'Mosque %',
+        data: WAQT_LIST.map(w=>{
+          const s=waqtStats[w.key];
+          return s.total?Math.round(s.mosque/s.total*100):0;
+        }),
+        backgroundColor:'rgba(45,122,90,0.15)',
+        borderColor:'#3DA876', pointBackgroundColor:'#3DA876', pointRadius:4,
+      }],
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        r:{
+          min:0, max:100,
+          grid:{ color:gridColor }, angleLines:{ color:gridColor },
+          ticks:{ display:false },
+          pointLabels:{ font:{ size:11 } },
+        },
+      },
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ADMIN — USER LIST, REPORTS, Q&A, AUDIT
+// ═══════════════════════════════════════════════════════════
+function renderUserList(users, logs) {
+  const el = document.getElementById('admin-user-list');
+  if (!users.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">👤</span>No members yet.</div>`; return; }
+  el.innerHTML = users.map(u => {
+    const userLogs = logs.filter(l=>l.user_id===u.user_id);
+    const total    = userLogs.length;
+    const prayed   = userLogs.filter(l=>String(l.status)==='1').length;
+    const pct      = total ? Math.round(prayed/total*100) : 0;
+    const phone    = u.phone||'';
+    const wa       = u.whatsapp_link||(phone?`https://wa.me/880${phone.replace(/^0/,'')}`:'');
+    return `
+    <div class="user-card" id="ucard-${u.user_id}">
+      <div class="user-card__avatar">👤</div>
+      <div class="user-card__info">
+        <div class="user-card__name">${escHtml(u.name)}</div>
+        <div class="user-card__phone">${phone}</div>
+        <div class="attendance-bar-wrap">
+          <span style="font-size:0.68rem;color:var(--text-muted)">Mosque ${pct}%</span>
+          <div class="attendance-bar"><div class="attendance-bar__fill" style="width:${pct}%"></div></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <span class="user-card__streak">${total} logs</span>
+        <div class="user-card__actions">
+          ${phone?`<a class="action-btn action-btn--call" href="tel:${phone}" title="Call">📞</a>`:''}
+          ${wa?`<a class="action-btn action-btn--wa" href="${wa}" target="_blank" title="WhatsApp">💬</a>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterUsers(q) {
+  const term = q.toLowerCase();
+  document.querySelectorAll('.user-card').forEach(card=>{
+    card.style.display = card.textContent.toLowerCase().includes(term)?'':'none';
+  });
+}
+
+function renderAdminReports(reports) {
+  const el = document.getElementById('admin-reports-list');
+  if (!reports.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">📋</span>No reports submitted.</div>`; return; }
+  el.innerHTML = [...reports].reverse().map(r=>`
+    <div class="admin-chat-item">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span class="chip chip--red">${escHtml(r.issue_type)}</span>
+        <span style="font-size:0.7rem;color:var(--text-muted);font-family:var(--font-mono)">${fmtDate(r.timestamp)}</span>
+      </div>
+      <div class="admin-chat-item__q">${escHtml(r.description)}</div>
+      <button class="btn btn--danger btn--sm mt-2" onclick="adminDeleteReport('${r.report_id}')">Delete Report</button>
+    </div>
+  `).join('');
+}
+
+async function adminDeleteReport(report_id) {
+  if (!confirm('Delete this report?')) return;
+  loading(true);
+  try {
+    const res = await apiPost({ action:'deleteSocialReport', report_id, modified_by:'admin' });
+    if (!res.success) { toast(res.message,'err'); return; }
+    toast('Report deleted','info'); loadAdminData();
+  } catch { toast('Failed','err'); } finally { loading(false); }
+}
+
+function renderAdminQA(chats) {
+  const el = document.getElementById('admin-qa-list');
+  const unreplied = chats.filter(c=>!c.is_replied||c.is_replied==='false');
+  const replied   = chats.filter(c=>c.is_replied&&c.is_replied!=='false');
+  if (!chats.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">💬</span>No questions yet.</div>`; return; }
+  el.innerHTML = `
+    <div style="margin-bottom:10px">
+      <span class="chip chip--red">⏳ ${unreplied.length} awaiting reply</span>
+      <span class="chip chip--green" style="margin-left:6px">✓ ${replied.length} answered</span>
+    </div>
+    ${[...chats].reverse().map(c=>`
+    <div class="admin-chat-item">
+      <div class="admin-chat-item__from">From: ${c.user_id} · ${fmtDate(c.timestamp)}</div>
+      <div class="admin-chat-item__q">${escHtml(c.question)}</div>
+      ${c.is_replied&&c.is_replied!=='false'
+        ?`<div style="margin-top:8px;padding:8px 12px;background:rgba(45,122,90,0.1);border-radius:6px;font-size:0.82rem;color:var(--emerald-l)">✓ ${escHtml(c.answer)}</div>`
+        :`<div class="admin-chat-item__reply-area mt-2">
+            <input class="field__input" type="text" id="reply-${c.chat_id}" placeholder="Type your reply…"/>
+            <button class="btn btn--success btn--sm" onclick="adminReply('${c.chat_id}')">Reply</button>
+           </div>`}
+    </div>`).join('')}`;
+}
+
+async function adminReply(chat_id) {
+  const answer = document.getElementById(`reply-${chat_id}`).value.trim();
+  if (!answer) { toast('Type a reply first','err'); return; }
+  loading(true);
+  try {
+    const res = await apiPost({ action:'replyChatQuestion', chat_id, answer, modified_by:'admin' });
+    if (!res.success) { toast(res.message,'err'); return; }
+    toast('✓ Reply sent','ok'); loadAdminData();
+  } catch { toast('Failed','err'); } finally { loading(false); }
+}
+
+async function loadAdminAudit() {
+  const el = document.getElementById('admin-audit-list');
+  try {
+    const res = await apiGet({ action:'getAuditLogs' });
+    if (!res.success||!res.data.length) {
+      el.innerHTML=`<div class="empty-state"><span class="emoji">🗂️</span>No audit entries yet.</div>`; return;
+    }
+    el.innerHTML=[...res.data].reverse().slice(0,50).map(a=>`
+      <div class="admin-chat-item">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
+          <span class="chip">${a.table_name}</span>
+          <span class="chip ${a.action==='DELETE'?'chip--red':a.action==='UPDATE'?'chip--gold':'chip--green'}">${a.action}</span>
+          <span style="font-size:0.7rem;color:var(--text-muted);font-family:var(--font-mono)">${fmtDate(a.timestamp)}</span>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text-muted)">By: ${escHtml(String(a.modified_by))}</div>
+        <details style="margin-top:6px">
+          <summary style="font-size:0.75rem;color:var(--text-muted);cursor:pointer">View old record</summary>
+          <pre style="font-size:0.68rem;color:var(--text-muted);white-space:pre-wrap;margin-top:6px;background:var(--bg);padding:8px;border-radius:6px;overflow-x:auto">${escHtml(String(a.old_data))}</pre>
+        </details>
+      </div>
+    `).join('');
+  } catch { el.innerHTML=`<div class="empty-state">Failed to load</div>`; }
+}
+
+function switchAdminTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════════
+(function boot() {
+  applyTheme();
+  loadSession();
+  updateStoredHashDisplay();
+  if (SESSION) {
+    document.getElementById('screen-auth').style.display  = 'none';
+    document.getElementById('screen-main').style.display = 'block';
+    document.getElementById('greeting-name').textContent  = SESSION.name;
+    document.getElementById('greeting-text').textContent  = greetingText();
+    initWaqtGrid();
+    loadStreakData();
+    loadDeedsTimeline();
+    loadChatThread();
+    refreshPrayerTimes();
+    updateNotifStatusBar();
+    if (Notification.permission === 'granted') renderNotifSettings();
+  }
+})();
+</script>
+</body>
+</html>
