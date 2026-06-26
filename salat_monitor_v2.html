@@ -822,6 +822,72 @@ select.field__input { appearance:none; }
 .pt-card__icon { font-size:18px; margin:3px 0; line-height:1; }
 .pt-card__time { font-size:0.8rem; font-weight:700; color:var(--text-primary); font-family:var(--font-mono); }
 .pt-card.active-waqt .pt-card__time { color:var(--gold-light); }
+
+/* Manual time set modal */
+.modal-overlay {
+  position:fixed; inset:0; z-index:300;
+  background:rgba(0,0,0,0.7);
+  backdrop-filter:blur(6px);
+  display:none; place-items:center; padding:20px;
+}
+.modal-overlay.show { display:grid; }
+.modal-box {
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:22px;
+  width:100%; max-width:380px;
+  box-shadow:var(--shadow), var(--shadow-gold);
+  max-height:90dvh; overflow-y:auto;
+}
+.modal-box__title {
+  font-family:var(--font-display);
+  font-size:1.2rem; color:var(--text-primary);
+  margin-bottom:4px;
+}
+.modal-box__sub { font-size:0.78rem; color:var(--text-muted); margin-bottom:18px; }
+.manual-time-grid { display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }
+.manual-time-row {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  background:var(--bg-elevated);
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm);
+  padding:12px 14px;
+}
+.manual-time-row__label {
+  display:flex; align-items:center; gap:8px;
+  font-size:0.9rem; font-weight:600; color:var(--text-primary);
+}
+.manual-time-row__input {
+  background:var(--bg-input);
+  border:1px solid var(--border-soft);
+  border-radius:6px;
+  padding:7px 10px;
+  font-size:0.88rem; font-weight:600;
+  color:var(--text-primary);
+  font-family:var(--font-mono);
+  width:90px; text-align:center;
+  outline:none;
+}
+.manual-time-row__input:focus { border-color:var(--gold-dim); }
+.manual-source-row {
+  display:flex; gap:8px; margin-bottom:16px;
+}
+.source-btn {
+  flex:1; padding:9px 6px;
+  font-size:0.78rem; font-weight:600;
+  border-radius:var(--radius-sm);
+  border:1.5px solid var(--border-soft);
+  background:var(--bg-elevated);
+  color:var(--text-muted);
+  transition:all var(--transition);
+  text-align:center;
+}
+.source-btn.active {
+  border-color:var(--gold);
+  background:rgba(201,168,76,0.1);
+  color:var(--gold-light);
+}
 .next-prayer-banner {
   background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(45,122,90,0.07));
   border:1px solid var(--border);
@@ -929,7 +995,7 @@ select.field__input { appearance:none; }
   <div class="loading-overlay" id="loadingOverlay">
     <div style="text-align:center">
       <div class="spinner" style="width:40px;height:40px;border-width:3px;margin:0 auto 12px"></div>
-      <div style="color:var(--text-muted);font-size:0.82rem">Loading…</div>
+      <div style="color:var(--text-muted);font-size:0.82rem">লোড হচ্ছে…</div>
     </div>
   </div>
 
@@ -945,16 +1011,16 @@ select.field__input { appearance:none; }
       <div class="auth-logo">
         <div class="auth-logo__ring">🕌</div>
         <span class="auth-logo__arabic">مراقبة الصلاة</span>
-        <div class="auth-logo__sub">Salat Monitoring System</div>
+        <div class="auth-logo__sub">নামাজ পর্যবেক্ষণ সিস্টেম</div>
       </div>
 
       <div class="card card--gold">
         <div class="field">
-          <label class="field__label">Your Name</label>
-          <input class="field__input" type="text" id="auth-name" placeholder="Enter your full name" autocomplete="name"/>
+          <label class="field__label">আপনার নাম</label>
+          <input class="field__input" type="text" id="auth-name" placeholder="আপনার পুরো নাম লিখুন" autocomplete="name"/>
         </div>
         <div class="field" style="margin-bottom:0">
-          <label class="field__label">Mobile Number</label>
+          <label class="field__label">মোবাইল নম্বর</label>
           <div class="phone-prefix">
             <span class="phone-prefix__code">🇧🇩 +880</span>
             <input class="field__input" type="tel" id="auth-phone" placeholder="01XXXXXXXXX" maxlength="11" inputmode="numeric"/>
@@ -962,20 +1028,20 @@ select.field__input { appearance:none; }
         </div>
         <div class="auth-divider">or</div>
         <div class="field" style="margin-bottom:0">
-          <label class="field__label">WhatsApp Link (optional)</label>
+          <label class="field__label">হোয়াটসঅ্যাপ লিঙ্ক (ঐচ্ছিক)</label>
           <input class="field__input" type="url" id="auth-wa" placeholder="https://wa.me/880..."/>
         </div>
       </div>
 
       <button class="btn btn--primary btn--full mt-4" id="btn-register" onclick="handleAuth()">
-        <span>Continue →</span>
+        <span>প্রবেশ করুন →</span>
       </button>
       <div class="text-center mt-2">
-        <span class="text-muted">Already registered? Just enter your phone number.</span>
+        <span class="text-muted">আগে রেজিস্ট্রেশন করা থাকলে শুধু ফোন নম্বর দিন।</span>
       </div>
 
       <div style="margin-top:28px;text-align:center">
-        <button class="btn btn--ghost btn--sm" onclick="loginAsAdmin()">🔐 Admin / Imam Login</button>
+        <button class="btn btn--ghost btn--sm" onclick="loginAsAdmin()">🔐 ইমাম / অ্যাডমিন প্রবেশ</button>
       </div>
     </div>
   </div>
@@ -991,12 +1057,12 @@ select.field__input { appearance:none; }
         <div class="topnav__icon">🕌</div>
         <div>
           <div class="topnav__title">مراقبة الصلاة</div>
-          <div class="topnav__sub">Salat Monitor</div>
+          <div class="topnav__sub">নামাজ মনিটর</div>
         </div>
       </div>
       <div class="topnav__actions">
-        <button class="btn-icon" onclick="toggleTheme()" title="Toggle theme" id="theme-btn">🌙</button>
-        <button class="btn-icon" onclick="logout()" title="Logout">🚪</button>
+        <button class="btn-icon" onclick="toggleTheme()" title="থিম পরিবর্তন" id="theme-btn">🌙</button>
+        <button class="btn-icon" onclick="logout()" title="লগ আউট">🚪</button>
       </div>
     </nav>
 
@@ -1007,7 +1073,7 @@ select.field__input { appearance:none; }
         <!-- Prayer Time API Widget -->
         <div class="card card--gold mb-4" id="prayertime-card">
           <div class="section-hd">
-            <div class="section-hd__title">Prayer Times</div>
+            <div class="section-hd__title">নামাজের সময়</div>
             <div class="section-hd__arabic">مواقيت الصلاة</div>
           </div>
 
@@ -1017,11 +1083,15 @@ select.field__input { appearance:none; }
             <span id="location-label">Detecting location…</span>
             <span style="margin-left:auto;font-size:11px;color:var(--gold)">↻ Refresh</span>
           </div>
+          <!-- Manual time set button -->
+          <button class="btn btn--ghost btn--sm btn--full" onclick="openManualModal()" style="margin-bottom:10px;font-size:0.78rem">
+            ⏰ সময় ম্যানুয়ালি সেট করুন
+          </button>
 
           <!-- Next prayer countdown banner -->
           <div class="next-prayer-banner" id="next-banner" style="display:none">
             <div>
-              <div class="next-prayer-banner__label">Next Prayer</div>
+              <div class="next-prayer-banner__label">পরবর্তী নামাজ</div>
               <div class="next-prayer-banner__name" id="next-name">—</div>
             </div>
             <div class="next-prayer-banner__countdown" id="next-countdown">00:00:00</div>
@@ -1029,16 +1099,16 @@ select.field__input { appearance:none; }
 
           <!-- 5-waqt time strip -->
           <div class="prayer-times-strip" id="pt-strip">
-            <div style="color:var(--text-muted);font-size:0.82rem;padding:10px">Loading prayer times…</div>
+            <div style="color:var(--text-muted);font-size:0.82rem;padding:10px">নামাজের সময় লোড হচ্ছে…</div>
           </div>
 
           <!-- Push notification toggle -->
           <div style="margin-top:8px">
             <div id="notif-status-bar" class="notif-status-bar notif-status-bar--default">
-              🔔 Enable notifications to get Adhan reminders
+              🔔 আযানের রিমাইন্ডার পেতে নোটিফিকেশন চালু করুন
             </div>
             <button class="btn btn--ghost btn--sm btn--full" id="notif-enable-btn" onclick="requestNotifPermission()">
-              Enable Prayer Reminders
+              নামাজের রিমাইন্ডার চালু করুন
             </button>
           </div>
         </div>
@@ -1055,8 +1125,8 @@ select.field__input { appearance:none; }
         <!-- 40-Day Streak -->
         <div class="card card--gold mb-4" id="streak-card">
           <div class="section-hd">
-            <div class="section-hd__title">40-Day Challenge</div>
-            <span class="label-tag">🔥 Streak</span>
+            <div class="section-hd__title">৪০ দিনের চ্যালেঞ্জ</div>
+            <span class="label-tag">🔥 ধারাবাহিকতা</span>
           </div>
 
           <div class="streak-card">
@@ -1076,23 +1146,23 @@ select.field__input { appearance:none; }
               </svg>
               <div class="streak-ring__text">
                 <span class="streak-ring__number" id="streak-num">0</span>
-                <span class="streak-ring__label">/ 40 days</span>
+                <span class="streak-ring__label">/ ৪০ দিন</span>
               </div>
             </div>
 
             <div class="streak-meta">
               <div class="streak-stat">
                 <div class="streak-stat__val" id="streak-mosque">0</div>
-                <div class="streak-stat__key">Mosque Days</div>
+                <div class="streak-stat__key">মসজিদ দিন</div>
               </div>
               <div class="streak-stat">
                 <div class="streak-stat__val" id="streak-attend">0%</div>
-                <div class="streak-stat__key">Attendance</div>
+                <div class="streak-stat__key">উপস্থিতি</div>
               </div>
             </div>
 
             <div class="streak-badges" id="streak-badges">
-              <span class="badge badge--muted">Log prayers to start</span>
+              <span class="badge badge--muted">নামাজ লগ করুন</span>
             </div>
 
             <!-- 40 dots grid -->
@@ -1103,12 +1173,12 @@ select.field__input { appearance:none; }
         <!-- Daily Waqt Tracker -->
         <div class="card mb-4">
           <div class="section-hd">
-            <div class="section-hd__title">Today's Prayers</div>
+            <div class="section-hd__title">আজকের নামাজ</div>
             <div class="section-hd__arabic">صلاة اليوم</div>
           </div>
 
           <div class="field mb-4">
-            <label class="field__label">Date</label>
+            <label class="field__label">তারিখ</label>
             <input class="field__input" type="date" id="tracker-date"/>
           </div>
 
@@ -1118,7 +1188,7 @@ select.field__input { appearance:none; }
 
           <div class="waqt-submit-bar mt-4">
             <button class="btn btn--primary btn--full" onclick="submitAllWaqt()">
-              Save Today's Prayers
+              আজকের নামাজ সেভ করুন
             </button>
           </div>
         </div>
@@ -1131,20 +1201,20 @@ select.field__input { appearance:none; }
       <div class="container">
         <div class="card mb-4">
           <div class="section-hd">
-            <div class="section-hd__title">Good Deeds Diary</div>
+            <div class="section-hd__title">নেক আমলের ডায়েরি</div>
             <div class="section-hd__arabic">دفتر الأعمال</div>
           </div>
           <div class="field">
-            <label class="field__label">Record a Good Deed</label>
-            <textarea class="field__input" id="deed-input" rows="3" placeholder="e.g. Helped a neighbour with groceries…"></textarea>
+            <label class="field__label">নেক আমল লিখুন</label>
+            <textarea class="field__input" id="deed-input" rows="3" placeholder="যেমন: প্রতিবেশীকে সাহায্য করলাম…"></textarea>
           </div>
-          <button class="btn btn--primary btn--full" onclick="submitDeed()">Add to My Diary ✦</button>
+          <button class="btn btn--primary btn--full" onclick="submitDeed()">ডায়েরিতে যোগ করুন ✦</button>
         </div>
 
         <div id="deeds-timeline-wrap">
           <div class="empty-state">
             <span class="emoji">📜</span>
-            Your private diary is empty. Start recording.
+            আপনার ব্যক্তিগত ডায়েরি এখনো খালি।
           </div>
         </div>
       </div>
@@ -1157,51 +1227,51 @@ select.field__input { appearance:none; }
         <!-- Anonymous Report -->
         <div class="card">
           <div class="section-hd">
-            <div class="section-hd__title">Report an Issue</div>
-            <span class="label-tag">Anonymous</span>
+            <div class="section-hd__title">সমস্যা জানান</div>
+            <span class="label-tag">গোপনীয়</span>
           </div>
           <div class="anon-note">
-            🔒 Your identity is never recorded. This goes directly to the Imam.
+            🔒 আপনার পরিচয় কখনো সংরক্ষিত হবে না। এটি সরাসরি ইমামের কাছে যাবে।
           </div>
           <div class="field">
-            <label class="field__label">Issue Type</label>
+            <label class="field__label">সমস্যার ধরন</label>
             <select class="field__input" id="report-type">
-              <option value="">Select category…</option>
-              <option value="Drug Abuse">💊 Drug Abuse</option>
-              <option value="Financial Crisis">💸 Financial Crisis</option>
-              <option value="Family Dispute">👨‍👩‍👧 Family Dispute</option>
-              <option value="Youth Misconduct">🧑 Youth Misconduct</option>
-              <option value="Community Neglect">🏘️ Community Neglect</option>
-              <option value="Mental Health">🧠 Mental Health Concern</option>
-              <option value="Other">📌 Other</option>
+              <option value="">বিভাগ বেছে নিন…</option>
+              <option value="Drug Abuse">💊 মাদক সেবন</option>
+              <option value="Financial Crisis">💸 আর্থিক সংকট</option>
+              <option value="Family Dispute">👨‍👩‍👧 পারিবারিক বিরোধ</option>
+              <option value="Youth Misconduct">🧑 যুব অপরাধ</option>
+              <option value="Community Neglect">🏘️ সামাজিক অবহেলা</option>
+              <option value="Mental Health">🧠 মানসিক স্বাস্থ্য সমস্যা</option>
+              <option value="Other">📌 অন্যান্য</option>
             </select>
           </div>
           <div class="field" style="margin-bottom:0">
-            <label class="field__label">Description</label>
-            <textarea class="field__input" id="report-desc" rows="3" placeholder="Describe the situation briefly…"></textarea>
+            <label class="field__label">বিস্তারিত বিবরণ</label>
+            <textarea class="field__input" id="report-desc" rows="3" placeholder="সংক্ষেপে পরিস্থিতি বর্ণনা করুন…"></textarea>
           </div>
-          <button class="btn btn--primary btn--full mt-4" onclick="submitReport()">Submit Anonymously →</button>
+          <button class="btn btn--primary btn--full mt-4" onclick="submitReport()">গোপনে জমা দিন →</button>
         </div>
 
         <!-- Live Chat -->
         <div class="card">
           <div class="section-hd">
-            <div class="section-hd__title">Ask the Imam</div>
+            <div class="section-hd__title">ইমামকে জিজ্ঞেস করুন</div>
             <div class="section-hd__arabic">سؤال</div>
           </div>
 
           <div class="chat-thread" id="chat-thread">
             <div class="empty-state">
               <span class="emoji">💬</span>
-              No questions yet. Ask below.
+              এখনো কোনো প্রশ্ন নেই। নিচে জিজ্ঞেস করুন।
             </div>
           </div>
 
           <div class="divider"></div>
           <div class="field" style="margin-bottom:8px">
-            <textarea class="field__input" id="chat-input" rows="2" placeholder="Type your question…"></textarea>
+            <textarea class="field__input" id="chat-input" rows="2" placeholder="আপনার প্রশ্ন লিখুন…"></textarea>
           </div>
-          <button class="btn btn--primary btn--full" onclick="submitChatQuestion()">Send Question →</button>
+          <button class="btn btn--primary btn--full" onclick="submitChatQuestion()">প্রশ্ন পাঠান →</button>
         </div>
 
       </div>
@@ -1214,17 +1284,17 @@ select.field__input { appearance:none; }
         <!-- Gate (password protected with hashing) -->
         <div id="admin-gate" class="admin-gate">
           <div class="admin-gate__icon">🔐</div>
-          <div class="section-hd__title mb-4" style="margin-bottom:16px">Admin / Imam Panel</div>
+          <div class="section-hd__title mb-4" style="margin-bottom:16px">ইমাম / অ্যাডমিন প্যানেল</div>
           <div class="card" style="max-width:340px;margin:0 auto">
             <div class="field">
-              <label class="field__label">Admin PIN</label>
+              <label class="field__label">অ্যাডমিন পিন</label>
               <div class="pin-input-wrap">
                 <input class="field__input" type="password" id="admin-pin"
-                       placeholder="Enter secure PIN" maxlength="20"
+                       placeholder="নিরাপদ পিন দিন" maxlength="20"
                        oninput="onPinInput(this.value)"
                        onkeydown="if(event.key==='Enter')unlockAdmin()"
                        style="padding-right:44px"/>
-                <button class="pin-eye" onclick="togglePinVisibility()" id="pin-eye-btn" title="Show/hide">👁️</button>
+                <button class="pin-eye" onclick="togglePinVisibility()" id="pin-eye-btn" title="দেখান/লুকান">👁️</button>
               </div>
               <div class="pin-strength" id="pin-strength">
                 <div class="pin-strength__dot" id="ps1"></div>
@@ -1232,22 +1302,22 @@ select.field__input { appearance:none; }
                 <div class="pin-strength__dot" id="ps3"></div>
                 <div class="pin-strength__dot" id="ps4"></div>
               </div>
-              <div class="pin-hint" id="pin-hint">Enter PIN to unlock</div>
+              <div class="pin-hint" id="pin-hint">আনলক করতে পিন দিন</div>
               <div class="hash-display" id="pin-hash-display"></div>
             </div>
-            <button class="btn btn--primary btn--full" onclick="unlockAdmin()">🔓 Unlock Panel</button>
+            <button class="btn btn--primary btn--full" onclick="unlockAdmin()">🔓 প্যানেল খুলুন</button>
             <div style="margin-top:14px">
               <details>
-                <summary style="font-size:0.75rem;color:var(--text-muted);cursor:pointer">⚙️ Set New PIN (Admin Setup)</summary>
+                <summary style="font-size:0.75rem;color:var(--text-muted);cursor:pointer">⚙️ নতুন পিন সেট করুন (অ্যাডমিন সেটআপ)</summary>
                 <div style="margin-top:12px">
                   <div class="field" style="margin-bottom:8px">
-                    <label class="field__label">New PIN</label>
-                    <input class="field__input" type="password" id="new-pin-input" placeholder="At least 6 characters"/>
+                    <label class="field__label">নতুন পিন</label>
+                    <input class="field__input" type="password" id="new-pin-input" placeholder="কমপক্ষে ৬ অক্ষর"/>
                   </div>
-                  <button class="btn btn--ghost btn--sm btn--full" onclick="saveNewPinHash()">Save New PIN Hash</button>
+                  <button class="btn btn--ghost btn--sm btn--full" onclick="saveNewPinHash()">নতুন পিন সেভ করুন</button>
                   <div class="hash-display show" id="stored-hash-display" style="margin-top:8px">
-                    <span style="color:var(--text-muted)">Stored hash: </span>
-                    <span id="stored-hash-text">Loading…</span>
+                    <span style="color:var(--text-muted)">সংরক্ষিত হ্যাশ: </span>
+                    <span id="stored-hash-text">লোড হচ্ছে…</span>
                   </div>
                 </div>
               </details>
@@ -1258,35 +1328,35 @@ select.field__input { appearance:none; }
         <!-- Panel content (hidden until unlocked) -->
         <div id="admin-panel" style="display:none; padding:0 0 20px;">
           <div class="section-hd" style="margin-bottom:16px">
-            <div class="section-hd__title">Imam Dashboard</div>
-            <span class="label-tag">Admin</span>
+            <div class="section-hd__title">ইমাম ড্যাশবোর্ড</div>
+            <span class="label-tag">অ্যাডমিন</span>
           </div>
 
           <!-- Stats Row -->
           <div class="stats-grid" id="admin-stats-grid">
-            <div class="stat-card"><div class="stat-card__val" id="stat-users">—</div><div class="stat-card__key">Total Members</div></div>
-            <div class="stat-card"><div class="stat-card__val" id="stat-logs">—</div><div class="stat-card__key">Prayer Logs</div></div>
-            <div class="stat-card"><div class="stat-card__val" id="stat-reports">—</div><div class="stat-card__key">Reports</div></div>
-            <div class="stat-card"><div class="stat-card__val" id="stat-chats">—</div><div class="stat-card__key">Questions</div></div>
+            <div class="stat-card"><div class="stat-card__val" id="stat-users">—</div><div class="stat-card__key">মোট সদস্য</div></div>
+            <div class="stat-card"><div class="stat-card__val" id="stat-logs">—</div><div class="stat-card__key">নামাজ লগ</div></div>
+            <div class="stat-card"><div class="stat-card__val" id="stat-reports">—</div><div class="stat-card__key">রিপোর্ট</div></div>
+            <div class="stat-card"><div class="stat-card__val" id="stat-chats">—</div><div class="stat-card__key">প্রশ্ন</div></div>
           </div>
 
           <!-- Tabs -->
           <div class="tab-bar">
-            <button class="tab-btn active" onclick="switchAdminTab('members', this)">👤 Members</button>
-            <button class="tab-btn" onclick="switchAdminTab('charts', this)">📊 Charts</button>
-            <button class="tab-btn" onclick="switchAdminTab('reports', this)">📋 Reports</button>
-            <button class="tab-btn" onclick="switchAdminTab('qa', this)">💬 Q&A</button>
-            <button class="tab-btn" onclick="switchAdminTab('audit', this)">🗂️ Audit</button>
+            <button class="tab-btn active" onclick="switchAdminTab('members', this)">👤 সদস্য</button>
+            <button class="tab-btn" onclick="switchAdminTab('charts', this)">📊 চার্ট</button>
+            <button class="tab-btn" onclick="switchAdminTab('reports', this)">📋 রিপোর্ট</button>
+            <button class="tab-btn" onclick="switchAdminTab('qa', this)">💬 প্রশ্নোত্তর</button>
+            <button class="tab-btn" onclick="switchAdminTab('audit', this)">🗂️ অডিট লগ</button>
           </div>
 
           <!-- Members tab -->
           <div class="tab-panel active" id="tab-members">
             <div class="search-bar">
               <span>🔍</span>
-              <input type="text" placeholder="Search members…" oninput="filterUsers(this.value)" id="user-search"/>
+              <input type="text" placeholder="সদস্য খুঁজুন…" oninput="filterUsers(this.value)" id="user-search"/>
             </div>
             <div id="admin-user-list" class="user-list">
-              <div class="empty-state"><span class="emoji">⏳</span>Loading members…</div>
+              <div class="empty-state"><span class="emoji">⏳</span>সদস্যদের তথ্য লোড হচ্ছে…</div>
             </div>
           </div>
 
@@ -1294,20 +1364,20 @@ select.field__input { appearance:none; }
           <div class="tab-panel" id="tab-charts">
             <div class="chart-grid">
               <div class="chart-card">
-                <div class="chart-card__title">🕌 Mosque vs Home vs Missed</div>
+                <div class="chart-card__title">🕌 মসজিদ বনাম বাড়ি বনাম মিস</div>
                 <div class="chart-wrap"><canvas id="chart-donut"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-card__title">📈 Daily Attendance (Last 14 Days)</div>
+                <div class="chart-card__title">📈 দৈনিক উপস্থিতি (শেষ ১৪ দিন)</div>
                 <div class="chart-wrap"><canvas id="chart-line"></canvas></div>
               </div>
             </div>
             <div class="chart-card">
-              <div class="chart-card__title">👤 Top 10 Members by Streak</div>
+              <div class="chart-card__title">👤 সেরা ১০ সদস্য (ধারাবাহিকতা অনুযায়ী)</div>
               <div class="chart-wrap chart-wrap--tall"><canvas id="chart-bar"></canvas></div>
             </div>
             <div class="chart-card">
-              <div class="chart-card__title">🕐 Waqt-wise Attendance Rate</div>
+              <div class="chart-card__title">🕐 ওয়াক্তভিত্তিক উপস্থিতির হার</div>
               <div class="chart-wrap"><canvas id="chart-radar"></canvas></div>
             </div>
           </div>
@@ -1315,21 +1385,21 @@ select.field__input { appearance:none; }
           <!-- Reports tab -->
           <div class="tab-panel" id="tab-reports">
             <div id="admin-reports-list">
-              <div class="empty-state"><span class="emoji">⏳</span>Loading reports…</div>
+              <div class="empty-state"><span class="emoji">⏳</span>রিপোর্ট লোড হচ্ছে…</div>
             </div>
           </div>
 
           <!-- Q&A tab -->
           <div class="tab-panel" id="tab-qa">
             <div id="admin-qa-list">
-              <div class="empty-state"><span class="emoji">⏳</span>Loading questions…</div>
+              <div class="empty-state"><span class="emoji">⏳</span>প্রশ্ন লোড হচ্ছে…</div>
             </div>
           </div>
 
           <!-- Audit tab -->
           <div class="tab-panel" id="tab-audit">
             <div id="admin-audit-list">
-              <div class="empty-state"><span class="emoji">⏳</span>Loading audit log…</div>
+              <div class="empty-state"><span class="emoji">⏳</span>অডিট লগ লোড হচ্ছে…</div>
             </div>
           </div>
         </div>
@@ -1338,13 +1408,61 @@ select.field__input { appearance:none; }
 
     <!-- BOTTOM NAV -->
     <nav class="bottomnav">
-      <button class="bottomnav__item active" id="nav-home"      onclick="switchScreen('home',      this)"><span class="icon">🕌</span>Prayers</button>
-      <button class="bottomnav__item"        id="nav-deeds"     onclick="switchScreen('deeds',     this)"><span class="icon">📜</span>Deeds</button>
-      <button class="bottomnav__item"        id="nav-community" onclick="switchScreen('community', this)"><span class="icon">🤝</span>Community</button>
-      <button class="bottomnav__item"        id="nav-admin"     onclick="switchScreen('admin',     this)"><span class="icon">⚙️</span>Admin</button>
+      <button class="bottomnav__item active" id="nav-home"      onclick="switchScreen('home',      this)"><span class="icon">🕌</span>নামাজ</button>
+      <button class="bottomnav__item"        id="nav-deeds"     onclick="switchScreen('deeds',     this)"><span class="icon">📜</span>আমল</button>
+      <button class="bottomnav__item"        id="nav-community" onclick="switchScreen('community', this)"><span class="icon">🤝</span>কমিউনিটি</button>
+      <button class="bottomnav__item"        id="nav-admin"     onclick="switchScreen('admin',     this)"><span class="icon">⚙️</span>অ্যাডমিন</button>
     </nav>
 
   </div><!-- /screen-main -->
+
+<!-- ═══════════ MANUAL PRAYER TIME MODAL ═══════════ -->
+<div class="modal-overlay" id="manual-time-modal">
+  <div class="modal-box">
+    <div class="modal-box__title">⏰ নামাজের সময় সেট করুন</div>
+    <div class="modal-box__sub">সময় লিখুন — ১২ ঘন্টা ফরম্যাটে (যেমন: ৫:১২ AM, ১২:০১ PM)</div>
+
+    <!-- Source toggle -->
+    <div class="manual-source-row">
+      <button class="source-btn active" id="src-auto" onclick="switchTimeSource('auto')">🌐 Auto (API)</button>
+      <button class="source-btn" id="src-manual" onclick="switchTimeSource('manual')">✏️ ম্যানুয়াল</button>
+    </div>
+
+    <!-- Auto mode info -->
+    <div id="auto-mode-info" style="padding:12px 14px;background:rgba(45,122,90,0.08);border:1px solid rgba(45,122,90,0.2);border-radius:var(--radius-sm);font-size:0.82rem;color:var(--emerald-l);margin-bottom:16px">
+      ✅ API থেকে স্বয়ংক্রিয়ভাবে সময় নেওয়া হচ্ছে। ম্যানুয়াল সেট করতে উপরে ক্লিক করুন।
+    </div>
+
+    <!-- Manual input grid -->
+    <div class="manual-time-grid" id="manual-input-grid" style="display:none">
+      <div class="manual-time-row">
+        <div class="manual-time-row__label">🌅 ফজর</div>
+        <input class="manual-time-row__input" type="time" id="mt-Fajr" value="05:00"/>
+      </div>
+      <div class="manual-time-row">
+        <div class="manual-time-row__label">☀️ যোহর</div>
+        <input class="manual-time-row__input" type="time" id="mt-Dhuhr" value="12:00"/>
+      </div>
+      <div class="manual-time-row">
+        <div class="manual-time-row__label">🌤️ আসর</div>
+        <input class="manual-time-row__input" type="time" id="mt-Asr" value="15:30"/>
+      </div>
+      <div class="manual-time-row">
+        <div class="manual-time-row__label">🌇 মাগরিব</div>
+        <input class="manual-time-row__input" type="time" id="mt-Maghrib" value="18:00"/>
+      </div>
+      <div class="manual-time-row">
+        <div class="manual-time-row__label">🌙 এশা</div>
+        <input class="manual-time-row__input" type="time" id="mt-Isha" value="19:30"/>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button class="btn btn--primary btn--full" id="modal-save-btn" onclick="saveManualTimes()">সেভ করুন</button>
+      <button class="btn btn--ghost" style="min-width:80px" onclick="closeManualModal()">বাতিল</button>
+    </div>
+  </div>
+</div>
 
 </div><!-- /app -->
 
@@ -1390,10 +1508,10 @@ const WAQT_LIST = [
 ];
 
 const STATUS_MAP = {
-  mosque:  { label:'Mosque',  icon:'🕌', value:'1' },
-  home:    { label:'Home',    icon:'🏠', value:'2' },
-  travel:  { label:'Travel',  icon:'✈️', value:'3' },
-  missed:  { label:'Missed',  icon:'❌', value:'0' },
+  mosque:  { label:'মসজিদ',  icon:'🕌', value:'1' },
+  home:    { label:'বাড়ি',    icon:'🏠', value:'2' },
+  travel:  { label:'সফর',  icon:'✈️', value:'3' },
+  missed:  { label:'মিস',  icon:'❌', value:'0' },
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -1428,7 +1546,7 @@ function onPinInput(val) {
     d.style.background = i < strength ? colors[strength] : 'var(--bg-elevated)';
   });
 
-  const hints = ['', 'Weak — too short', 'Fair — add more characters', 'Good', 'Strong ✓'];
+  const hints = ['', 'দুর্বল — অনেক ছোট', 'মোটামুটি — আরো বড় করুন', 'ভালো', 'শক্তিশালী ✓'];
   document.getElementById('pin-hint').textContent = hints[strength] || 'Enter PIN';
 }
 
@@ -1441,7 +1559,7 @@ function togglePinVisibility() {
 
 async function unlockAdmin() {
   const pin = document.getElementById('admin-pin').value;
-  if (!pin) { toast('Enter your PIN', 'err'); return; }
+  if (!pin) { toast('পিন দিন', 'err'); return; }
 
   const hash = await sha256(pin);
 
@@ -1454,10 +1572,10 @@ async function unlockAdmin() {
   if (!savedHash) {
     // First time: no hash stored yet — bootstrap with default PIN "786786"
     const defaultHash = await sha256('786786');
-    if (hash !== defaultHash) { toast('Wrong PIN. Default is 786786', 'err'); return; }
+    if (hash !== defaultHash) { toast('ভুল পিন। ডিফল্ট পিন হলো 786786', 'err'); return; }
     localStorage.setItem('salat_admin_pin_hash', defaultHash);
   } else {
-    if (hash !== savedHash) { toast('Incorrect PIN ✗', 'err'); return; }
+    if (hash !== savedHash) { toast('পিন সঠিক নয় ✗', 'err'); return; }
   }
 
   document.getElementById('admin-gate').style.display  = 'none';
@@ -1468,10 +1586,10 @@ async function unlockAdmin() {
 
 async function saveNewPinHash() {
   const newPin = document.getElementById('new-pin-input').value.trim();
-  if (newPin.length < 4) { toast('PIN must be at least 4 characters', 'err'); return; }
+  if (newPin.length < 4) { toast('পিন কমপক্ষে ৪ অক্ষর হতে হবে', 'err'); return; }
   const hash = await sha256(newPin);
   localStorage.setItem('salat_admin_pin_hash', hash);
-  toast('✓ New PIN saved securely', 'ok');
+  toast('✓ নতুন পিন নিরাপদে সংরক্ষিত হয়েছে', 'ok');
   updateStoredHashDisplay();
   document.getElementById('new-pin-input').value = '';
 }
@@ -1522,11 +1640,11 @@ function loadSession() {
 
 function greetingText() {
   const h = new Date().getHours();
-  if (h < 6)  return 'Rise for Fajr 🌙';
-  if (h < 12) return 'Good morning ☀️';
-  if (h < 15) return 'Good afternoon 🌤';
-  if (h < 18) return 'Good evening 🌇';
-  return 'Good night 🌙';
+  if (h < 6)  return 'ফজরের নামাজের সময় 🌙';
+  if (h < 12) return 'শুভ সকাল ☀️';
+  if (h < 15) return 'শুভ দুপুর 🌤';
+  if (h < 18) return 'শুভ বিকেল 🌇';
+  return 'শুভ রাত 🌙';
 }
 
 function escHtml(str) {
@@ -1560,7 +1678,22 @@ const PT_ICONS = { Fajr:'🌅', Sunrise:'🌄', Dhuhr:'☀️', Asr:'🌤️', S
 const PT_SHOW  = ['Fajr','Dhuhr','Asr','Maghrib','Isha'];
 
 async function refreshPrayerTimes(forceGeo = false) {
-  const cached = !forceGeo && localStorage.getItem('salat_pt_cache');
+  const src = localStorage.getItem(TIME_SOURCE_KEY) || 'auto';
+
+  // ম্যানুয়াল মোড — API skip, localStorage থেকে load
+  if (src === 'manual' && !forceGeo) {
+    const saved = getSavedManualTimes();
+    if (saved) {
+      PRAYER_TIMES = { ...saved, Sunrise: saved.Fajr, Sunset: saved.Maghrib };
+      document.getElementById('location-label').textContent = '✏️ ম্যানুয়াল সময় সেট করা আছে';
+      renderPrayerTimes();
+      scheduleNotifications();
+      return;
+    }
+  }
+
+  // Auto মোড — API থেকে fetch
+  const cached    = !forceGeo && localStorage.getItem('salat_pt_cache');
   const cachedDay = localStorage.getItem('salat_pt_day');
   if (cached && cachedDay === todayStr()) {
     PRAYER_TIMES = JSON.parse(cached);
@@ -1568,24 +1701,22 @@ async function refreshPrayerTimes(forceGeo = false) {
     return;
   }
 
-  document.getElementById('location-label').textContent = 'Detecting location…';
+  document.getElementById('location-label').textContent = 'অবস্থান শনাক্ত হচ্ছে…';
   try {
     const pos = await new Promise((res, rej) =>
       navigator.geolocation.getCurrentPosition(res, rej, { timeout:8000 }));
     const { latitude: lat, longitude: lng } = pos.coords;
 
-    // Reverse geocode for city name
     const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
     const geo    = await geoRes.json();
-    const city   = geo.address?.city || geo.address?.town || geo.address?.county || 'Your Location';
+    const city   = geo.address?.city || geo.address?.town || geo.address?.county || 'আপনার এলাকা';
     document.getElementById('location-label').textContent = `📍 ${city}`;
 
-    // Aladhan Prayer Times API
-    const today  = new Date();
-    const dd = String(today.getDate()).padStart(2,'0');
-    const mm = String(today.getMonth()+1).padStart(2,'0');
-    const yyyy = today.getFullYear();
-    const ptRes  = await fetch(`https://api.aladhan.com/v1/timings/${dd}-${mm}-${yyyy}?latitude=${lat}&longitude=${lng}&method=2`);
+    const today = new Date();
+    const dd    = String(today.getDate()).padStart(2,'0');
+    const mm    = String(today.getMonth()+1).padStart(2,'0');
+    const yyyy  = today.getFullYear();
+    const ptRes = await fetch(`https://api.aladhan.com/v1/timings/${dd}-${mm}-${yyyy}?latitude=${lat}&longitude=${lng}&method=2`);
     const ptData = await ptRes.json();
 
     if (ptData.code === 200) {
@@ -1595,9 +1726,8 @@ async function refreshPrayerTimes(forceGeo = false) {
       renderPrayerTimes();
       scheduleNotifications();
     }
-  } catch (err) {
-    document.getElementById('location-label').textContent = '📍 Dhaka (Default)';
-    // Fallback: Dhaka hardcoded
+  } catch {
+    document.getElementById('location-label').textContent = '📍 ঢাকা (ডিফল্ট)';
     await fetchPrayerTimesByCity('Dhaka', 'Bangladesh');
   }
 }
@@ -1629,9 +1759,20 @@ function parseTime(timeStr) {
   return d;
 }
 
+// ─── 24h → 12h বাংলাদেশ ফরম্যাট (১টা, ২টা… রাত ১২টা) ───
+function to12h(dateObj) {
+  let h = dateObj.getHours();
+  const m = String(dateObj.getMinutes()).padStart(2, '0');
+  const ampm = h < 12 ? 'AM' : 'PM';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+// Countdown stays HH:MM:SS (universal — no confusion there)
 function renderPrayerTimes() {
   if (!PRAYER_TIMES) return;
-  const now  = new Date();
+  const now   = new Date();
   const strip = document.getElementById('pt-strip');
 
   // Find current + next waqt
@@ -1653,24 +1794,23 @@ function renderPrayerTimes() {
   }
   if (!currentWaqt) { currentWaqt = null; nextWaqt = times[0].name; nextTime = times[0].time; }
 
+  // Render cards — ১২ ঘন্টা ফরম্যাটে
   strip.innerHTML = times.map(({ name, time }) => {
-    const hh = String(time.getHours()).padStart(2,'0');
-    const mm = String(time.getMinutes()).padStart(2,'0');
-    const isActive = name === currentWaqt || (!currentWaqt && name === times[0].name && now < times[0].time);
+    const displayTime = to12h(time);   // ← ১২ ঘন্টা
+    const isActive = name === currentWaqt ||
+      (!currentWaqt && name === times[0].name && now < times[0].time);
     return `<div class="pt-card ${isActive ? 'active-waqt' : ''}">
       <div class="pt-card__name">${name}</div>
       <div class="pt-card__icon">${PT_ICONS[name] || '🕐'}</div>
-      <div class="pt-card__time">${hh}:${mm}</div>
+      <div class="pt-card__time">${displayTime}</div>
     </div>`;
   }).join('');
 
   // Next prayer banner
-  const banner = document.getElementById('next-banner');
-  banner.style.display = 'flex';
-  document.getElementById('next-name').textContent = nextWaqt;
   document.getElementById('next-banner').style.display = 'flex';
+  document.getElementById('next-name').textContent = nextWaqt;
 
-  // Start countdown
+  // Countdown timer
   if (COUNTDOWN_TIMER) clearInterval(COUNTDOWN_TIMER);
   function tick() {
     const diff = nextTime - new Date();
@@ -1682,6 +1822,88 @@ function renderPrayerTimes() {
   }
   tick();
   COUNTDOWN_TIMER = setInterval(tick, 1000);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MANUAL PRAYER TIME SET
+// ═══════════════════════════════════════════════════════════
+const MANUAL_PT_KEY = 'salat_manual_times';
+const TIME_SOURCE_KEY = 'salat_time_source'; // 'auto' | 'manual'
+
+function openManualModal() {
+  // Pre-fill inputs from current PRAYER_TIMES if available
+  if (PRAYER_TIMES) {
+    PT_SHOW.forEach(w => {
+      const el = document.getElementById(`mt-${w}`);
+      if (el) {
+        const t = parseTime(PRAYER_TIMES[w]);
+        el.value = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+      }
+    });
+  } else {
+    // Load saved manual times if any
+    const saved = getSavedManualTimes();
+    if (saved) {
+      PT_SHOW.forEach(w => {
+        const el = document.getElementById(`mt-${w}`);
+        if (el && saved[w]) el.value = saved[w];
+      });
+    }
+  }
+
+  // Reflect current source
+  const src = localStorage.getItem(TIME_SOURCE_KEY) || 'auto';
+  switchTimeSource(src, false);
+
+  document.getElementById('manual-time-modal').classList.add('show');
+}
+
+function closeManualModal() {
+  document.getElementById('manual-time-modal').classList.remove('show');
+}
+
+function switchTimeSource(src, save = true) {
+  const isManual = src === 'manual';
+  document.getElementById('src-auto').classList.toggle('active', !isManual);
+  document.getElementById('src-manual').classList.toggle('active',  isManual);
+  document.getElementById('auto-mode-info').style.display    = isManual ? 'none'  : 'block';
+  document.getElementById('manual-input-grid').style.display = isManual ? 'flex'  : 'none';
+  document.getElementById('modal-save-btn').style.display    = isManual ? ''      : 'none';
+  if (save) localStorage.setItem(TIME_SOURCE_KEY, src);
+}
+
+function getSavedManualTimes() {
+  try { return JSON.parse(localStorage.getItem(MANUAL_PT_KEY)); }
+  catch { return null; }
+}
+
+function saveManualTimes() {
+  const manual = {};
+  let valid = true;
+  PT_SHOW.forEach(w => {
+    const el  = document.getElementById(`mt-${w}`);
+    const val = el ? el.value : '';
+    if (!val) { toast(`${w} সময় দিন`, 'err'); valid = false; return; }
+    manual[w] = val; // "HH:MM" — 24h from <input type="time">
+  });
+  if (!valid) return;
+
+  localStorage.setItem(MANUAL_PT_KEY, JSON.stringify(manual));
+  localStorage.setItem(TIME_SOURCE_KEY, 'manual');
+
+  // Build PRAYER_TIMES object in Aladhan format
+  PRAYER_TIMES = { ...manual };
+  // Add dummy keys Aladhan returns (not shown but needed for notif)
+  PRAYER_TIMES.Sunrise = manual.Fajr; // placeholder
+  PRAYER_TIMES.Sunset  = manual.Maghrib;
+
+  toast('✓ সময় সেভ হয়েছে', 'ok');
+  closeManualModal();
+  renderPrayerTimes();
+  scheduleNotifications();
+
+  // Update location label to show manual
+  document.getElementById('location-label').textContent = '✏️ ম্যানুয়াল সময় (পরিবর্তিত)';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1697,11 +1919,11 @@ function getNotifSettings() {
 function saveNotifSettings(s) { localStorage.setItem(NOTIF_SETTINGS_KEY, JSON.stringify(s)); }
 
 async function requestNotifPermission() {
-  if (!('Notification' in window)) { toast('Notifications not supported in this browser', 'err'); return; }
+  if (!('Notification' in window)) { toast('এই ব্রাউজারে নোটিফিকেশন সাপোর্ট নেই', 'err'); return; }
   const perm = await Notification.requestPermission();
   updateNotifStatusBar(perm);
   if (perm === 'granted') {
-    toast('✓ Prayer reminders enabled!', 'ok');
+    toast('✓ নামাজের রিমাইন্ডার চালু হয়েছে!', 'ok');
     scheduleNotifications();
     // Save default settings: all waqts enabled
     const settings = {};
@@ -1710,7 +1932,7 @@ async function requestNotifPermission() {
     saveNotifSettings(settings);
     renderNotifSettings();
   } else {
-    toast('Notifications blocked. Enable in browser settings.', 'err');
+    toast('নোটিফিকেশন ব্লক করা। ব্রাউজার সেটিংসে চালু করুন।', 'err');
   }
 }
 
@@ -1720,13 +1942,13 @@ function updateNotifStatusBar(perm) {
   if (!bar) return;
   bar.className = 'notif-status-bar notif-status-bar--' + (perm || Notification.permission);
   if (perm === 'granted' || Notification.permission === 'granted') {
-    bar.textContent = '✅ Prayer notifications are ON';
+    bar.textContent = '✅ নামাজের নোটিফিকেশন চালু আছে';
     btn.style.display = 'none';
   } else if (perm === 'denied' || Notification.permission === 'denied') {
-    bar.textContent = '🚫 Notifications blocked — enable in browser settings';
+    bar.textContent = '🚫 নোটিফিকেশন ব্লক — ব্রাউজার সেটিংসে চালু করুন';
     btn.style.display = 'none';
   } else {
-    bar.textContent = '🔔 Tap below to receive Adhan reminders';
+    bar.textContent = '🔔 আযানের রিমাইন্ডার পেতে নিচে ট্যাপ করুন';
     btn.style.display = '';
   }
 }
@@ -1749,8 +1971,8 @@ function scheduleNotifications() {
     const ms  = t.getTime() - minBefore - now;
     if (ms <= 0) return;
     const timer = setTimeout(() => {
-      new Notification(`🕌 Time for ${waqt}`, {
-        body: `${waqt} prayer starts in ${settings.minutesBefore || 5} minutes. اللَّهُ أَكْبَر`,
+      new Notification(`🕌 ${waqt} এর সময় হয়েছে`, {
+        body: `${waqt} এর নামাজ শুরু হবে ${settings.minutesBefore || 5} মিনিটে। اللَّهُ أَكْبَر`,
         icon: 'https://cdn-icons-png.flaticon.com/512/3159/3159066.png',
         badge:'https://cdn-icons-png.flaticon.com/512/3159/3159066.png',
         tag: `salat-${waqt}`,
@@ -1773,23 +1995,23 @@ function renderNotifSettings() {
   card.className = 'card mb-4';
   card.innerHTML = `
     <div class="section-hd">
-      <div class="section-hd__title">Reminder Settings</div>
-      <span class="label-tag">🔔 Notifications</span>
+      <div class="section-hd__title">রিমাইন্ডার সেটিংস</div>
+      <span class="label-tag">🔔 বিজ্ঞপ্তি</span>
     </div>
     <div class="field mb-4">
-      <label class="field__label">Alert me before prayer (minutes)</label>
+      <label class="field__label">নামাজের কত মিনিট আগে সতর্ক করবে</label>
       <select class="field__input" id="notif-min-select" onchange="saveNotifMin(this.value)">
-        <option value="5"  ${(settings.minutesBefore||5)==5?'selected':''}>5 minutes before</option>
-        <option value="10" ${settings.minutesBefore==10?'selected':''}>10 minutes before</option>
-        <option value="15" ${settings.minutesBefore==15?'selected':''}>15 minutes before</option>
-        <option value="30" ${settings.minutesBefore==30?'selected':''}>30 minutes before</option>
+        <option value="5"  ${(settings.minutesBefore||5)==5?'selected':''}>৫ মিনিট আগে</option>
+        <option value="10" ${settings.minutesBefore==10?'selected':''}>১০ মিনিট আগে</option>
+        <option value="15" ${settings.minutesBefore==15?'selected':''}>১৫ মিনিট আগে</option>
+        <option value="30" ${settings.minutesBefore==30?'selected':''}>৩০ মিনিট আগে</option>
       </select>
     </div>
     ${PT_SHOW.map(w => `
       <div class="notif-row">
         <div class="notif-row__info">
           <div class="notif-row__title">${PT_ICONS[w]||'🕐'} ${w}</div>
-          <div class="notif-row__sub">${PRAYER_TIMES?parseTime(PRAYER_TIMES[w]).toLocaleTimeString('en-BD',{hour:'2-digit',minute:'2-digit'}):'—'}</div>
+          <div class="notif-row__sub">${PRAYER_TIMES ? to12h(parseTime(PRAYER_TIMES[w])) : '—'}</div>
         </div>
         <label class="toggle">
           <input type="checkbox" ${settings[w]!==false?'checked':''} onchange="toggleNotif('${w}',this.checked)"/>
@@ -1809,7 +2031,7 @@ function toggleNotif(waqt, enabled) {
   s[waqt] = enabled;
   saveNotifSettings(s);
   scheduleNotifications();
-  toast(`${waqt} reminder ${enabled ? 'on' : 'off'}`, 'info');
+  toast(`${waqt} রিমাইন্ডার ${enabled ? 'চালু' : 'বন্ধ'}`, 'info');
 }
 
 function saveNotifMin(val) {
@@ -1817,7 +2039,7 @@ function saveNotifMin(val) {
   s.minutesBefore = parseInt(val);
   saveNotifSettings(s);
   scheduleNotifications();
-  toast(`Reminders set ${val} min before prayer`, 'ok');
+  toast(`নামাজের ${val} মিনিট আগে রিমাইন্ডার সেট হয়েছে`, 'ok');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1848,7 +2070,7 @@ async function handleAuth() {
   const phone = document.getElementById('auth-phone').value.trim();
   const wa    = document.getElementById('auth-wa').value.trim();
 
-  if (!phone || phone.length < 10) { toast('Enter a valid phone number', 'err'); return; }
+  if (!phone || phone.length < 10) { toast('সঠিক ফোন নম্বর দিন', 'err'); return; }
 
   loading(true);
   try {
@@ -1857,23 +2079,23 @@ async function handleAuth() {
       const existing = check.data.find(u => u.phone === phone || u.phone === '0'+phone);
       if (existing) {
         saveSession({ ...existing, is_admin:false });
-        toast(`Welcome back, ${existing.name}!`, 'ok');
+        toast(`স্বাগতম ফিরে এলেন, ${existing.name}!`, 'ok');
         enterApp(); return;
       }
     }
-    if (!name) { loading(false); toast('Enter your name to register', 'err'); return; }
+    if (!name) { loading(false); toast('রেজিস্ট্রেশনের জন্য নাম দিন', 'err'); return; }
     const res = await apiPost({ action:'registerUser', name, phone, whatsapp_link:wa });
     if (!res.success) { toast(res.message || 'Registration failed', 'err'); return; }
     saveSession({ ...res.data, is_admin:false });
-    toast(`Welcome, ${name}! ✨`, 'ok');
+    toast(`স্বাগতম, ${name}! ✨`, 'ok');
     enterApp();
-  } catch { toast('Connection error. Check your network.', 'err'); }
+  } catch { toast('সংযোগ ব্যর্থ। নেটওয়ার্ক চেক করুন।', 'err'); }
   finally   { loading(false); }
 }
 
 function loginAsAdmin() {
   saveSession({ user_id:'admin', name:'Imam / Admin', phone:'', whatsapp_link:'', is_admin:true });
-  toast('Switched to Admin session', 'info');
+  toast('অ্যাডমিন সেশনে প্রবেশ হয়েছে', 'info');
   enterApp();
   setTimeout(() => switchScreen('admin', document.getElementById('nav-admin')), 300);
 }
@@ -1903,7 +2125,7 @@ function logout() {
   document.getElementById('screen-main').style.display = 'none';
   document.getElementById('auth-name').value = '';
   document.getElementById('auth-phone').value = '';
-  toast('Logged out', 'info');
+  toast('লগ আউট হয়েছে', 'info');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1939,7 +2161,7 @@ function initWaqtGrid() {
         `).join('')}
       </div>
       <div class="reason-box" id="reason-${waqt.key}">
-        <input class="field__input" type="text" id="reason-input-${waqt.key}" placeholder="Brief reason (required)…"/>
+        <input class="field__input" type="text" id="reason-input-${waqt.key}" placeholder="কারণ লিখুন (বাধ্যতামূলক)…"/>
       </div>
     </div>
   `).join('');
@@ -1957,16 +2179,16 @@ function onWaqtChange(waqt, val) {
 async function submitAllWaqt() {
   if (!SESSION) return;
   const date = document.getElementById('tracker-date').value;
-  if (!date) { toast('Pick a date', 'err'); return; }
+  if (!date) { toast('তারিখ বেছে নিন', 'err'); return; }
   const prayers = [];
   for (const waqt of WAQT_LIST) {
     const sel = document.querySelector(`input[name="waqt-${waqt.key}"]:checked`);
-    if (!sel) { toast(`Select status for ${waqt.key}`, 'err'); return; }
+    if (!sel) { toast(`${waqt.key} এর অবস্থা বেছে নিন`, 'err'); return; }
     const status = STATUS_MAP[sel.value];
     let reason = '';
     if (['home','travel','missed'].includes(sel.value)) {
       reason = document.getElementById(`reason-input-${waqt.key}`).value.trim();
-      if (!reason) { toast(`Add a reason for ${waqt.key}`, 'err'); return; }
+      if (!reason) { toast(`${waqt.key} এর কারণ লিখুন`, 'err'); return; }
     }
     prayers.push({ waqt:waqt.key, status:status.value, reason });
   }
@@ -1974,9 +2196,9 @@ async function submitAllWaqt() {
   try {
     const res = await apiPost({ action:'submitBulkSalah', user_id:SESSION.user_id, date, prayers });
     if (!res.success) { toast(res.message, 'err'); return; }
-    toast(`✓ ${res.data.saved.length} prayers saved!`, 'ok');
+    toast(`✓ ${res.data.saved.length}টি নামাজ সেভ হয়েছে!`, 'ok');
     updateStreakDisplay(res.data.streak);
-  } catch { toast('Failed to save. Try again.', 'err'); }
+  } catch { toast('সেভ ব্যর্থ হয়েছে। আবার চেষ্টা করুন।', 'err'); }
   finally   { loading(false); }
 }
 
@@ -2006,12 +2228,12 @@ function updateStreakDisplay(data) {
 
   const badgesEl = document.getElementById('streak-badges');
   const badges = [];
-  if (streak >= 40)      badges.push(['badge--gold',  '🏆 40-Day Champion!']);
-  else if (streak >= 30) badges.push(['badge--gold',  '⭐ 30-Day Warrior']);
-  else if (streak >= 14) badges.push(['badge--green', '🔥 2-Week Streak']);
-  else if (streak >= 7)  badges.push(['badge--green', '✨ 1-Week Streak']);
-  else if (streak > 0)   badges.push(['badge--muted', `${streak} days going`]);
-  else                   badges.push(['badge--muted', '0-day streak — Start today']);
+  if (streak >= 40)      badges.push(['badge--gold',  '🏆 ৪০ দিনের চ্যাম্পিয়ন!']);
+  else if (streak >= 30) badges.push(['badge--gold',  '⭐ ৩০ দিনের যোদ্ধা']);
+  else if (streak >= 14) badges.push(['badge--green', '🔥 ২ সপ্তাহের ধারা']);
+  else if (streak >= 7)  badges.push(['badge--green', '✨ ১ সপ্তাহের ধারা']);
+  else if (streak > 0)   badges.push(['badge--muted', `${streak} দিন চলছে`]);
+  else                   badges.push(['badge--muted', 'আজ থেকে শুরু করুন']);
   badgesEl.innerHTML = badges.map(([cls,txt]) => `<span class="badge ${cls}">${txt}</span>`).join('');
 
   const grid     = document.getElementById('day-grid');
@@ -2031,15 +2253,15 @@ function updateStreakDisplay(data) {
 // ═══════════════════════════════════════════════════════════
 async function submitDeed() {
   const text = document.getElementById('deed-input').value.trim();
-  if (!text) { toast('Write something first', 'err'); return; }
+  if (!text) { toast('কিছু লিখুন আগে', 'err'); return; }
   loading(true);
   try {
     const res = await apiPost({ action:'submitGoodDeed', user_id:SESSION.user_id, deed_text:text });
     if (!res.success) { toast(res.message, 'err'); return; }
-    toast('✓ Deed recorded', 'ok');
+    toast('✓ আমল লিপিবদ্ধ হয়েছে', 'ok');
     document.getElementById('deed-input').value = '';
     loadDeedsTimeline();
-  } catch { toast('Failed to save', 'err'); }
+  } catch { toast('সেভ ব্যর্থ হয়েছে', 'err'); }
   finally { loading(false); }
 }
 
@@ -2049,7 +2271,7 @@ async function loadDeedsTimeline() {
   try {
     const res = await apiGet({ action:'getGoodDeeds', user_id:SESSION.user_id });
     if (!res.success || !res.data.length) {
-      wrap.innerHTML = `<div class="empty-state"><span class="emoji">📜</span>Your private diary is empty. Start recording.</div>`;
+      wrap.innerHTML = `<div class="empty-state"><span class="emoji">📜</span>আপনার ব্যক্তিগত ডায়েরি এখনো খালি।</div>`;
       return;
     }
     wrap.innerHTML = `<div class="deeds-timeline">${[...res.data].reverse().map(d => `
@@ -2064,16 +2286,16 @@ async function loadDeedsTimeline() {
         </div>
       </div>
     `).join('')}</div>`;
-  } catch { wrap.innerHTML = `<div class="empty-state">Failed to load</div>`; }
+  } catch { wrap.innerHTML = `<div class="empty-state">লোড ব্যর্থ হয়েছে</div>`; }
 }
 
 async function deleteDeed(deed_id) {
-  if (!confirm('Delete this deed entry?')) return;
+  if (!confirm('এই আমলটি মুছে ফেলবেন?')) return;
   loading(true);
   try {
     const res = await apiPost({ action:'deleteGoodDeed', deed_id, modified_by:SESSION.user_id });
     if (!res.success) { toast(res.message, 'err'); return; }
-    toast('Deleted', 'info');
+    toast('মুছে ফেলা হয়েছে', 'info');
     loadDeedsTimeline();
   } catch { toast('Failed', 'err'); }
   finally { loading(false); }
@@ -2085,16 +2307,16 @@ async function deleteDeed(deed_id) {
 async function submitReport() {
   const type = document.getElementById('report-type').value;
   const desc = document.getElementById('report-desc').value.trim();
-  if (!type) { toast('Select an issue type', 'err'); return; }
-  if (!desc)  { toast('Add a description', 'err'); return; }
+  if (!type) { toast('সমস্যার ধরন বেছে নিন', 'err'); return; }
+  if (!desc)  { toast('বিবরণ লিখুন', 'err'); return; }
   loading(true);
   try {
     const res = await apiPost({ action:'submitSocialReport', issue_type:type, description:desc });
     if (!res.success) { toast(res.message, 'err'); return; }
-    toast('✓ Report submitted anonymously', 'ok');
+    toast('✓ রিপোর্ট গোপনে জমা দেওয়া হয়েছে', 'ok');
     document.getElementById('report-type').value = '';
     document.getElementById('report-desc').value = '';
-  } catch { toast('Failed to submit', 'err'); }
+  } catch { toast('জমা দিতে ব্যর্থ হয়েছে', 'err'); }
   finally { loading(false); }
 }
 
@@ -2103,12 +2325,12 @@ async function submitReport() {
 // ═══════════════════════════════════════════════════════════
 async function submitChatQuestion() {
   const text = document.getElementById('chat-input').value.trim();
-  if (!text) { toast('Type your question first', 'err'); return; }
+  if (!text) { toast('আগে প্রশ্ন লিখুন', 'err'); return; }
   loading(true);
   try {
     const res = await apiPost({ action:'submitChatQuestion', user_id:SESSION.user_id, question:text });
     if (!res.success) { toast(res.message, 'err'); return; }
-    toast('✓ Question sent to Imam', 'ok');
+    toast('✓ প্রশ্ন ইমামের কাছে পাঠানো হয়েছে', 'ok');
     document.getElementById('chat-input').value = '';
     loadChatThread();
   } catch { toast('Failed', 'err'); }
@@ -2121,7 +2343,7 @@ async function loadChatThread() {
   try {
     const res = await apiGet({ action:'getLiveChat', user_id:SESSION.user_id });
     if (!res.success || !res.data.length) {
-      thread.innerHTML = `<div class="empty-state"><span class="emoji">💬</span>No questions yet. Ask below.</div>`; return;
+      thread.innerHTML = `<div class="empty-state"><span class="emoji">💬</span>এখনো কোনো প্রশ্ন নেই। নিচে জিজ্ঞেস করুন।</div>`; return;
     }
     thread.innerHTML = res.data.map(c => `
       <div class="chat-bubble chat-bubble--question">
@@ -2129,8 +2351,8 @@ async function loadChatThread() {
         <div class="chat-bubble__meta">${fmtDate(c.timestamp)}</div>
       </div>
       ${c.is_replied && c.is_replied !== 'false'
-        ? `<div class="chat-bubble chat-bubble--answer">${escHtml(c.answer)}<div class="chat-bubble__meta">✓ Imam replied</div></div>`
-        : `<div class="chat-pending"><div class="chat-dots"><span></span><span></span><span></span></div>Waiting for reply…</div>`}
+        ? `<div class="chat-bubble chat-bubble--answer">${escHtml(c.answer)}<div class="chat-bubble__meta">✓ ইমাম উত্তর দিয়েছেন</div></div>`
+        : `<div class="chat-pending"><div class="chat-dots"><span></span><span></span><span></span></div>উত্তরের অপেক্ষায়…</div>`}
     `).join('');
     thread.scrollTop = thread.scrollHeight;
   } catch {}
@@ -2165,7 +2387,7 @@ async function loadAdminData() {
     loadAdminAudit();
     buildCharts(users, logs);
   } catch (e) {
-    toast('Failed to load admin data', 'err');
+    toast('অ্যাডমিন ডেটা লোড ব্যর্থ হয়েছে', 'err');
     console.error(e);
   } finally { loading(false); }
 }
@@ -2198,7 +2420,7 @@ function buildCharts(users, logs) {
   CHARTS.donut = new Chart(document.getElementById('chart-donut'), {
     type:'doughnut',
     data:{
-      labels:['Mosque','Home','Travel','Missed'],
+      labels:['মসজিদ','বাড়ি','সফর','মিস'],
       datasets:[{
         data:[statusCounts['1'],statusCounts['2'],statusCounts['3'],statusCounts['0']],
         backgroundColor:['#2D7A5A','#C9A84C','#4A6FA5','#C0444A'],
@@ -2228,7 +2450,7 @@ function buildCharts(users, logs) {
     data:{
       labels: days14.map(d=>d.slice(5)),
       datasets:[{
-        label:'Mosque %', data:lineData,
+        label:'মসজিদ %', data:lineData,
         borderColor:'#C9A84C', backgroundColor:'rgba(201,168,76,0.08)',
         tension:0.4, fill:true, pointBackgroundColor:'#C9A84C',
         pointRadius:4, pointHoverRadius:6, spanGaps:true,
@@ -2258,7 +2480,7 @@ function buildCharts(users, logs) {
     data:{
       labels:top10.map(u=>u.name.split(' ')[0]),
       datasets:[{
-        label:'Mosque Prayers', data:top10.map(u=>u.count),
+        label:'মসজিদ নামাজ', data:top10.map(u=>u.count),
         backgroundColor:top10.map((_,i)=>i===0?'#C9A84C':i===1?'#8A7030':i===2?'#5A4A20':'rgba(201,168,76,0.3)'),
         borderRadius:6, borderSkipped:false,
       }],
@@ -2288,7 +2510,7 @@ function buildCharts(users, logs) {
     data:{
       labels: WAQT_LIST.map(w=>`${w.icon} ${w.key}`),
       datasets:[{
-        label:'Mosque %',
+        label:'মসজিদ %',
         data: WAQT_LIST.map(w=>{
           const s=waqtStats[w.key];
           return s.total?Math.round(s.mosque/s.total*100):0;
@@ -2317,7 +2539,7 @@ function buildCharts(users, logs) {
 // ═══════════════════════════════════════════════════════════
 function renderUserList(users, logs) {
   const el = document.getElementById('admin-user-list');
-  if (!users.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">👤</span>No members yet.</div>`; return; }
+  if (!users.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">👤</span>এখনো কোনো সদস্য নেই।</div>`; return; }
   el.innerHTML = users.map(u => {
     const userLogs = logs.filter(l=>l.user_id===u.user_id);
     const total    = userLogs.length;
@@ -2339,8 +2561,8 @@ function renderUserList(users, logs) {
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <span class="user-card__streak">${total} logs</span>
         <div class="user-card__actions">
-          ${phone?`<a class="action-btn action-btn--call" href="tel:${phone}" title="Call">📞</a>`:''}
-          ${wa?`<a class="action-btn action-btn--wa" href="${wa}" target="_blank" title="WhatsApp">💬</a>`:''}
+          ${phone?`<a class="action-btn action-btn--call" href="tel:${phone}" title="কল করুন">📞</a>`:''}
+          ${wa?`<a class="action-btn action-btn--wa" href="${wa}" target="_blank" title="হোয়াটসঅ্যাপ">💬</a>`:''}
         </div>
       </div>
     </div>`;
@@ -2356,7 +2578,7 @@ function filterUsers(q) {
 
 function renderAdminReports(reports) {
   const el = document.getElementById('admin-reports-list');
-  if (!reports.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">📋</span>No reports submitted.</div>`; return; }
+  if (!reports.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">📋</span>কোনো রিপোর্ট জমা নেই।</div>`; return; }
   el.innerHTML = [...reports].reverse().map(r=>`
     <div class="admin-chat-item">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -2370,12 +2592,12 @@ function renderAdminReports(reports) {
 }
 
 async function adminDeleteReport(report_id) {
-  if (!confirm('Delete this report?')) return;
+  if (!confirm('এই রিপোর্ট মুছে ফেলবেন?')) return;
   loading(true);
   try {
     const res = await apiPost({ action:'deleteSocialReport', report_id, modified_by:'admin' });
     if (!res.success) { toast(res.message,'err'); return; }
-    toast('Report deleted','info'); loadAdminData();
+    toast('রিপোর্ট মুছে ফেলা হয়েছে','info'); loadAdminData();
   } catch { toast('Failed','err'); } finally { loading(false); }
 }
 
@@ -2383,7 +2605,7 @@ function renderAdminQA(chats) {
   const el = document.getElementById('admin-qa-list');
   const unreplied = chats.filter(c=>!c.is_replied||c.is_replied==='false');
   const replied   = chats.filter(c=>c.is_replied&&c.is_replied!=='false');
-  if (!chats.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">💬</span>No questions yet.</div>`; return; }
+  if (!chats.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">💬</span>এখনো কোনো প্রশ্ন নেই।</div>`; return; }
   el.innerHTML = `
     <div style="margin-bottom:10px">
       <span class="chip chip--red">⏳ ${unreplied.length} awaiting reply</span>
@@ -2391,25 +2613,25 @@ function renderAdminQA(chats) {
     </div>
     ${[...chats].reverse().map(c=>`
     <div class="admin-chat-item">
-      <div class="admin-chat-item__from">From: ${c.user_id} · ${fmtDate(c.timestamp)}</div>
+      <div class="admin-chat-item__from">থেকে: ${c.user_id} · ${fmtDate(c.timestamp)}</div>
       <div class="admin-chat-item__q">${escHtml(c.question)}</div>
       ${c.is_replied&&c.is_replied!=='false'
         ?`<div style="margin-top:8px;padding:8px 12px;background:rgba(45,122,90,0.1);border-radius:6px;font-size:0.82rem;color:var(--emerald-l)">✓ ${escHtml(c.answer)}</div>`
         :`<div class="admin-chat-item__reply-area mt-2">
-            <input class="field__input" type="text" id="reply-${c.chat_id}" placeholder="Type your reply…"/>
-            <button class="btn btn--success btn--sm" onclick="adminReply('${c.chat_id}')">Reply</button>
+            <input class="field__input" type="text" id="reply-${c.chat_id}" placeholder="উত্তর লিখুন…"/>
+            <button class="btn btn--success btn--sm" onclick="adminReply('${c.chat_id}')">উত্তর দিন</button>
            </div>`}
     </div>`).join('')}`;
 }
 
 async function adminReply(chat_id) {
   const answer = document.getElementById(`reply-${chat_id}`).value.trim();
-  if (!answer) { toast('Type a reply first','err'); return; }
+  if (!answer) { toast('আগে উত্তর লিখুন','err'); return; }
   loading(true);
   try {
     const res = await apiPost({ action:'replyChatQuestion', chat_id, answer, modified_by:'admin' });
     if (!res.success) { toast(res.message,'err'); return; }
-    toast('✓ Reply sent','ok'); loadAdminData();
+    toast('✓ উত্তর পাঠানো হয়েছে','ok'); loadAdminData();
   } catch { toast('Failed','err'); } finally { loading(false); }
 }
 
@@ -2418,7 +2640,7 @@ async function loadAdminAudit() {
   try {
     const res = await apiGet({ action:'getAuditLogs' });
     if (!res.success||!res.data.length) {
-      el.innerHTML=`<div class="empty-state"><span class="emoji">🗂️</span>No audit entries yet.</div>`; return;
+      el.innerHTML=`<div class="empty-state"><span class="emoji">🗂️</span>কোনো অডিট এন্ট্রি নেই।</div>`; return;
     }
     el.innerHTML=[...res.data].reverse().slice(0,50).map(a=>`
       <div class="admin-chat-item">
@@ -2429,12 +2651,12 @@ async function loadAdminAudit() {
         </div>
         <div style="font-size:0.75rem;color:var(--text-muted)">By: ${escHtml(String(a.modified_by))}</div>
         <details style="margin-top:6px">
-          <summary style="font-size:0.75rem;color:var(--text-muted);cursor:pointer">View old record</summary>
+          <summary style="font-size:0.75rem;color:var(--text-muted);cursor:pointer">পুরনো তথ্য দেখুন</summary>
           <pre style="font-size:0.68rem;color:var(--text-muted);white-space:pre-wrap;margin-top:6px;background:var(--bg);padding:8px;border-radius:6px;overflow-x:auto">${escHtml(String(a.old_data))}</pre>
         </details>
       </div>
     `).join('');
-  } catch { el.innerHTML=`<div class="empty-state">Failed to load</div>`; }
+  } catch { el.innerHTML=`<div class="empty-state">লোড ব্যর্থ হয়েছে</div>`; }
 }
 
 function switchAdminTab(name, btn) {
