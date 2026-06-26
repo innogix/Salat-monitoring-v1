@@ -1253,7 +1253,21 @@ select.field__input { appearance:none; }
           <button class="btn btn--primary btn--full mt-4" onclick="submitReport()">গোপনে জমা দিন →</button>
         </div>
 
-        <!-- Live Chat -->
+        <!-- Public Q&A (উত্তর দেওয়া প্রশ্ন সবাই দেখতে পাবে, নাম ছাড়া) -->
+        <div class="card">
+          <div class="section-hd">
+            <div class="section-hd__title">সর্বজনীন প্রশ্নোত্তর</div>
+            <div class="section-hd__arabic">فتاوى</div>
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:12px">
+            ✅ ইমামের উত্তর দেওয়া প্রশ্নগুলো এখানে সবার জন্য প্রকাশিত হয়। প্রশ্নকারীর নাম গোপন থাকে।
+          </div>
+          <div id="public-qa-list">
+            <div class="empty-state"><span class="emoji">⏳</span>লোড হচ্ছে…</div>
+          </div>
+        </div>
+
+        <!-- Live Chat (ব্যক্তিগত প্রশ্ন) -->
         <div class="card">
           <div class="section-hd">
             <div class="section-hd__title">ইমামকে জিজ্ঞেস করুন</div>
@@ -1306,21 +1320,8 @@ select.field__input { appearance:none; }
               <div class="hash-display" id="pin-hash-display"></div>
             </div>
             <button class="btn btn--primary btn--full" onclick="unlockAdmin()">🔓 প্যানেল খুলুন</button>
-            <div style="margin-top:14px">
-              <details>
-                <summary style="font-size:0.75rem;color:var(--text-muted);cursor:pointer">⚙️ নতুন পিন সেট করুন (অ্যাডমিন সেটআপ)</summary>
-                <div style="margin-top:12px">
-                  <div class="field" style="margin-bottom:8px">
-                    <label class="field__label">নতুন পিন</label>
-                    <input class="field__input" type="password" id="new-pin-input" placeholder="কমপক্ষে ৬ অক্ষর"/>
-                  </div>
-                  <button class="btn btn--ghost btn--sm btn--full" onclick="saveNewPinHash()">নতুন পিন সেভ করুন</button>
-                  <div class="hash-display show" id="stored-hash-display" style="margin-top:8px">
-                    <span style="color:var(--text-muted)">সংরক্ষিত হ্যাশ: </span>
-                    <span id="stored-hash-text">লোড হচ্ছে…</span>
-                  </div>
-                </div>
-              </details>
+            <div style="margin-top:10px;font-size:0.72rem;color:var(--text-muted);text-align:center">
+              ডিফল্ট পিন: 786786 · পিন পরিবর্তন করুন প্যানেলের ভেতরে
             </div>
           </div>
         </div>
@@ -1341,12 +1342,13 @@ select.field__input { appearance:none; }
           </div>
 
           <!-- Tabs -->
-          <div class="tab-bar">
-            <button class="tab-btn active" onclick="switchAdminTab('members', this)">👤 সদস্য</button>
-            <button class="tab-btn" onclick="switchAdminTab('charts', this)">📊 চার্ট</button>
-            <button class="tab-btn" onclick="switchAdminTab('reports', this)">📋 রিপোর্ট</button>
-            <button class="tab-btn" onclick="switchAdminTab('qa', this)">💬 প্রশ্নোত্তর</button>
-            <button class="tab-btn" onclick="switchAdminTab('audit', this)">🗂️ অডিট লগ</button>
+          <div class="tab-bar" style="overflow-x:auto;flex-wrap:nowrap">
+            <button class="tab-btn active" onclick="switchAdminTab('members', this)" style="white-space:nowrap">👤 সদস্য</button>
+            <button class="tab-btn" onclick="switchAdminTab('charts', this)" style="white-space:nowrap">📊 চার্ট</button>
+            <button class="tab-btn" onclick="switchAdminTab('reports', this)" style="white-space:nowrap">📋 রিপোর্ট</button>
+            <button class="tab-btn" onclick="switchAdminTab('qa', this)" style="white-space:nowrap">💬 প্রশ্নোত্তর</button>
+            <button class="tab-btn" onclick="switchAdminTab('audit', this)" style="white-space:nowrap">🗂️ অডিট</button>
+            <button class="tab-btn" onclick="switchAdminTab('settings', this); loadSettingsTab()" style="white-space:nowrap">⚙️ সেটিংস</button>
           </div>
 
           <!-- Members tab -->
@@ -1402,7 +1404,43 @@ select.field__input { appearance:none; }
               <div class="empty-state"><span class="emoji">⏳</span>অডিট লগ লোড হচ্ছে…</div>
             </div>
           </div>
-        </div>
+
+          <!-- ⚙️ Settings tab (pin change, logout) -->
+          <div class="tab-panel" id="tab-settings">
+            <div class="card mb-4">
+              <div class="section-hd">
+                <div class="section-hd__title">🔑 পিন পরিবর্তন করুন</div>
+              </div>
+              <div class="field">
+                <label class="field__label">আগের পিন</label>
+                <input class="field__input" type="password" id="old-pin-input" placeholder="বর্তমান পিন দিন"/>
+              </div>
+              <div class="field">
+                <label class="field__label">নতুন পিন (কমপক্ষে ৬ অক্ষর)</label>
+                <input class="field__input" type="password" id="new-pin-input" placeholder="নতুন পিন দিন"/>
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label class="field__label">নতুন পিন নিশ্চিত করুন</label>
+                <input class="field__input" type="password" id="confirm-pin-input" placeholder="আবার নতুন পিন দিন"/>
+              </div>
+              <button class="btn btn--primary btn--full mt-4" onclick="changeAdminPin()">✓ পিন পরিবর্তন করুন</button>
+            </div>
+
+            <div class="card">
+              <div class="section-hd">
+                <div class="section-hd__title">🌐 API URL সেট করুন</div>
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label class="field__label">Google Apps Script URL</label>
+                <input class="field__input" type="text" id="api-url-input" placeholder="https://script.google.com/macros/s/.../exec"/>
+              </div>
+              <button class="btn btn--ghost btn--sm btn--full mt-4" onclick="saveApiUrl()">💾 URL সেভ করুন</button>
+            </div>
+
+            <div class="card mt-4">
+              <button class="btn btn--danger btn--full" onclick="lockAdminPanel()">🔒 প্যানেল লক করুন</button>
+            </div>
+          </div>
       </div>
     </div>
 
@@ -1480,15 +1518,28 @@ select.field__input { appearance:none; }
 
 <script>
 // ═══════════════════════════════════════════════════════════
-//  CONFIG
-//  API_URL: localStorage থেকে নেওয়া হয় — না থাকলে hardcode URL
+//  CONFIG — API URL (localStorage থেকে নেওয়া হয়)
 // ═══════════════════════════════════════════════════════════
-const API_URL_KEY = 'salat_api_url';
-function getApiUrl() {
-  return localStorage.getItem(API_URL_KEY) || 'https://script.google.com/macros/s/AKfycbwsR6FAmf3mVhAa9AilphGoJH1jb-OJGxmnqssfW1FTyjh47oKxzAKvx7VkihuCJHWJUw/exec';
+let API_URL = localStorage.getItem('salat_api_url') || 'https://script.google.com/macros/s/AKfycbwsR6FAmf3mVhAa9AilphGoJH1jb-OJGxmnqssfW1FTyjh47oKxzAKvx7VkihuCJHWJUw/exec';
+
+// ═══════════════════════════════════════════════════════════
+//  API HELPERS — CORS fix (Content-Type: text/plain)
+// ═══════════════════════════════════════════════════════════
+async function apiGet(params) {
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(`${API_URL}?${qs}`, { method:'GET', redirect:'follow' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
 }
-// API_URL এখন getter হিসেবে কাজ করে
-let API_URL = getApiUrl();
+async function apiPost(body) {
+  const res = await fetch(API_URL, {
+    method:'POST', redirect:'follow',
+    headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
 
 // Default hashed PIN (SHA-256 of "786786")
 // To change: enter new PIN in the Setup section, copy hash, store here
@@ -1657,36 +1708,6 @@ function escHtml(str) {
   return String(str)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
-}
-
-// ═══════════════════════════════════════════════════════════
-//  API HELPERS
-//  FIX: Google Apps Script CORS — Content-Type must be
-//  text/plain (not application/json) to avoid preflight.
-//  Data is still sent as JSON string in the body.
-// ═══════════════════════════════════════════════════════════
-async function apiGet(params) {
-  const qs = new URLSearchParams(params).toString();
-  const res = await fetch(`${API_URL}?${qs}`, {
-    method: 'GET',
-    redirect: 'follow',
-  });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
-}
-
-async function apiPost(body) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    redirect: 'follow',
-    // ⚠️ Google Apps Script CORS fix:
-    // Content-Type: text/plain দিলে preflight হয় না
-    // কিন্তু body JSON string হিসেবেই পাঠানো হচ্ছে
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2107,10 +2128,7 @@ async function handleAuth() {
     saveSession({ ...res.data, is_admin:false });
     toast(`স্বাগতম, ${name}! ✨`, 'ok');
     enterApp();
-  } catch (e) {
-    console.error('Auth error:', e);
-    toast('সংযোগ ব্যর্থ। API URL চেক করুন বা পেজ রিলোড করুন।', 'err');
-  }
+  } catch { toast('সংযোগ ব্যর্থ। নেটওয়ার্ক চেক করুন।', 'err'); }
   finally   { loading(false); }
 }
 
@@ -2157,7 +2175,7 @@ function switchScreen(name, btn) {
   document.querySelectorAll('.bottomnav__item').forEach(b => b.classList.remove('active'));
   document.getElementById(`screen-${name}`).classList.add('active');
   btn.classList.add('active');
-  if (name === 'community') loadChatThread();
+  if (name === 'community') { loadChatThread(); loadPublicQA(); }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2184,6 +2202,12 @@ function initWaqtGrid() {
       <div class="reason-box" id="reason-${waqt.key}">
         <input class="field__input" type="text" id="reason-input-${waqt.key}" placeholder="কারণ লিখুন (বাধ্যতামূলক)…"/>
       </div>
+      <div id="takbeer-${waqt.key}" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:8px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.85rem;color:var(--gold-light)">
+          <input type="checkbox" id="takbeer-check-${waqt.key}" style="width:18px;height:18px;accent-color:var(--gold)"/>
+          <span>🏆 তাকবীরে তাহরিমার সাথে সালাত আদায় করেছি <span style="font-size:0.72rem;color:var(--text-muted)">(প্রথম তাকবীর ধরা — সর্বোত্তম)</span></span>
+        </label>
+      </div>
     </div>
   `).join('');
 }
@@ -2191,8 +2215,10 @@ function initWaqtGrid() {
 function onWaqtChange(waqt, val) {
   const row    = document.getElementById(`waqt-row-${waqt}`);
   const reason = document.getElementById(`reason-${waqt}`);
+  const takbeer = document.getElementById(`takbeer-${waqt}`);
   row.classList.remove('logged','missed');
-  if (val === 'mosque') row.classList.add('logged');
+  if (val === 'mosque') { row.classList.add('logged'); takbeer.style.display='block'; }
+  else { takbeer.style.display='none'; }
   if (val === 'missed') row.classList.add('missed');
   reason.classList.toggle('show', ['home','travel','missed'].includes(val));
 }
@@ -2211,7 +2237,11 @@ async function submitAllWaqt() {
       reason = document.getElementById(`reason-input-${waqt.key}`).value.trim();
       if (!reason) { toast(`${waqt.key} এর কারণ লিখুন`, 'err'); return; }
     }
-    prayers.push({ waqt:waqt.key, status:status.value, reason });
+    prayers.push({ waqt:waqt.key, status:status.value, reason,
+      takbeer_with_imam: sel.value === 'mosque'
+        ? (document.getElementById(`takbeer-check-${waqt.key}`)?.checked ? '1' : '0')
+        : '0'
+    });
   }
   loading(true);
   try {
@@ -2219,10 +2249,7 @@ async function submitAllWaqt() {
     if (!res.success) { toast(res.message, 'err'); return; }
     toast(`✓ ${res.data.saved.length}টি নামাজ সেভ হয়েছে!`, 'ok');
     updateStreakDisplay(res.data.streak);
-  } catch (e) {
-    console.error('submitAllWaqt error:', e);
-    toast('সেভ ব্যর্থ। কনসোল দেখুন (F12)।', 'err');
-  }
+  } catch { toast('সেভ ব্যর্থ হয়েছে। আবার চেষ্টা করুন।', 'err'); }
   finally   { loading(false); }
 }
 
@@ -2234,10 +2261,7 @@ async function loadStreakData() {
   try {
     const res = await apiGet({ action:'getStreak', user_id:SESSION.user_id });
     if (res.success) updateStreakDisplay(res.data);
-    else toast('স্ট্রিক লোড ব্যর্থ: ' + res.message, 'err');
-  } catch (e) {
-    console.error('loadStreakData error:', e);
-  }
+  } catch {}
 }
 
 function updateStreakDisplay(data) {
@@ -2364,30 +2388,64 @@ async function submitChatQuestion() {
   finally { loading(false); }
 }
 
+let CHAT_REFRESH_TIMER = null;
+
 async function loadChatThread() {
   if (!SESSION || SESSION.is_admin) return;
   const thread = document.getElementById('chat-thread');
   try {
     const res = await apiGet({ action:'getLiveChat', user_id:SESSION.user_id });
     if (!res.success || !res.data.length) {
-      thread.innerHTML = `<div class="empty-state"><span class="emoji">💬</span>এখনো কোনো প্রশ্ন নেই। নিচে জিজ্ঞেস করুন।</div>`; return;
+      thread.innerHTML = `<div class="empty-state"><span class="emoji">💬</span>এখনো কোনো প্রশ্ন নেই। নিচে জিজ্ঞেস করুন।</div>`;
+    } else {
+      thread.innerHTML = [...res.data].reverse().map(c => `
+        <div class="chat-bubble chat-bubble--question">
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">আপনার প্রশ্ন</div>
+          ${escHtml(c.question)}
+          <div class="chat-bubble__meta">${fmtDate(c.timestamp)}</div>
+        </div>
+        ${(c.is_replied === true || c.is_replied === 'true' || c.is_replied === 1 || c.is_replied === '1')
+          ? `<div class="chat-bubble chat-bubble--answer">
+               <div style="font-size:0.75rem;color:var(--emerald-l);margin-bottom:4px">✓ ইমামের উত্তর</div>
+               ${escHtml(c.answer||'')}
+               <div class="chat-bubble__meta">উত্তর দেওয়া হয়েছে</div>
+             </div>`
+          : `<div class="chat-pending"><div class="chat-dots"><span></span><span></span><span></span></div>উত্তরের অপেক্ষায়…</div>`}
+      `).join('');
+      thread.scrollTop = thread.scrollHeight;
     }
-    thread.innerHTML = res.data.map(c => `
-      <div class="chat-bubble chat-bubble--question">
-        ${escHtml(c.question)}
-        <div class="chat-bubble__meta">${fmtDate(c.timestamp)}</div>
-      </div>
-      ${c.is_replied && c.is_replied !== 'false'
-        ? `<div class="chat-bubble chat-bubble--answer">${escHtml(c.answer)}<div class="chat-bubble__meta">✓ ইমাম উত্তর দিয়েছেন</div></div>`
-        : `<div class="chat-pending"><div class="chat-dots"><span></span><span></span><span></span></div>উত্তরের অপেক্ষায়…</div>`}
-    `).join('');
-    thread.scrollTop = thread.scrollHeight;
-  } catch {}
+  } catch(e) { console.error('loadChatThread:', e); }
+
+  // Auto-refresh প্রতি ৩০ সেকেন্ডে
+  if (CHAT_REFRESH_TIMER) clearTimeout(CHAT_REFRESH_TIMER);
+  CHAT_REFRESH_TIMER = setTimeout(loadChatThread, 30000);
 }
 
-// ═══════════════════════════════════════════════════════════
-//  ADMIN — LOAD DATA
-// ═══════════════════════════════════════════════════════════
+async function loadPublicQA() {
+  const el = document.getElementById('public-qa-list');
+  if (!el) return;
+  try {
+    const res = await apiGet({ action:'getLiveChat' }); // সব চ্যাট, user_id ছাড়া
+    if (!res.success || !res.data.length) {
+      el.innerHTML = `<div class="empty-state"><span class="emoji">💬</span>এখনো কোনো উত্তর দেওয়া হয়নি।</div>`; return;
+    }
+    const answered = res.data.filter(c => c.is_replied===true||c.is_replied==='true'||c.is_replied==='1'||c.is_replied===1);
+    if (!answered.length) {
+      el.innerHTML = `<div class="empty-state"><span class="emoji">💬</span>এখনো কোনো উত্তর দেওয়া হয়নি।</div>`; return;
+    }
+    el.innerHTML = [...answered].reverse().map(c=>`
+      <div style="border-bottom:1px solid var(--border-soft);padding-bottom:14px;margin-bottom:14px">
+        <div style="font-size:0.82rem;color:var(--text-body);margin-bottom:6px">
+          ❓ ${escHtml(c.question)}
+        </div>
+        <div style="padding:8px 12px;background:rgba(45,122,90,0.08);border-left:3px solid var(--emerald);border-radius:0 6px 6px 0;font-size:0.85rem;color:var(--emerald-l)">
+          ✅ ${escHtml(c.answer||'')}
+        </div>
+        <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px">${fmtDate(c.timestamp)}</div>
+      </div>
+    `).join('');
+  } catch(e) { console.error('loadPublicQA:', e); }
+}
 async function loadAdminData() {
   loading(true);
   try {
@@ -2628,38 +2686,74 @@ async function adminDeleteReport(report_id) {
   } catch { toast('Failed','err'); } finally { loading(false); }
 }
 
+let ADMIN_QA_TIMER = null;
+
 function renderAdminQA(chats) {
   const el = document.getElementById('admin-qa-list');
-  const unreplied = chats.filter(c=>!c.is_replied||c.is_replied==='false');
-  const replied   = chats.filter(c=>c.is_replied&&c.is_replied!=='false');
+  const unreplied = chats.filter(c=>!c.is_replied||c.is_replied==='false'||c.is_replied===false||c.is_replied==='0');
+  const replied   = chats.filter(c=>c.is_replied===true||c.is_replied==='true'||c.is_replied==='1'||c.is_replied===1);
   if (!chats.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">💬</span>এখনো কোনো প্রশ্ন নেই।</div>`; return; }
+
+  // অপেক্ষারত প্রশ্নে badge দেখান
+  const hasUnreplied = unreplied.length > 0;
+
   el.innerHTML = `
-    <div style="margin-bottom:10px">
-      <span class="chip chip--red">⏳ ${unreplied.length} awaiting reply</span>
-      <span class="chip chip--green" style="margin-left:6px">✓ ${replied.length} answered</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div>
+        <span class="chip chip--red">⏳ ${unreplied.length}টি উত্তর বাকি</span>
+        <span class="chip chip--green" style="margin-left:6px">✓ ${replied.length}টি উত্তর দেওয়া হয়েছে</span>
+      </div>
+      <button class="btn btn--ghost btn--sm" onclick="loadAdminData()">🔄 রিফ্রেশ</button>
     </div>
-    ${[...chats].reverse().map(c=>`
-    <div class="admin-chat-item">
-      <div class="admin-chat-item__from">থেকে: ${c.user_id} · ${fmtDate(c.timestamp)}</div>
-      <div class="admin-chat-item__q">${escHtml(c.question)}</div>
-      ${c.is_replied&&c.is_replied!=='false'
-        ?`<div style="margin-top:8px;padding:8px 12px;background:rgba(45,122,90,0.1);border-radius:6px;font-size:0.82rem;color:var(--emerald-l)">✓ ${escHtml(c.answer)}</div>`
-        :`<div class="admin-chat-item__reply-area mt-2">
-            <input class="field__input" type="text" id="reply-${c.chat_id}" placeholder="উত্তর লিখুন…"/>
-            <button class="btn btn--success btn--sm" onclick="adminReply('${c.chat_id}')">উত্তর দিন</button>
-           </div>`}
-    </div>`).join('')}`;
+    ${[...chats].reverse().map(c => {
+      const isReplied = c.is_replied===true||c.is_replied==='true'||c.is_replied==='1'||c.is_replied===1;
+      // নাম বের করা — user_id থেকে
+      const uName = (ALL_USERS_CACHE.find(u=>u.user_id===c.user_id)||{}).name || c.user_id;
+      return `
+      <div class="admin-chat-item" style="${!isReplied?'border-left:3px solid var(--rose);':''}" id="qaitem-${c.chat_id}">
+        <div class="admin-chat-item__from">👤 ${escHtml(uName)} · ${fmtDate(c.timestamp)}</div>
+        <div class="admin-chat-item__q" style="font-size:0.9rem;color:var(--text-primary);margin-bottom:8px">${escHtml(c.question)}</div>
+        ${isReplied
+          ? `<div style="padding:10px 12px;background:rgba(45,122,90,0.1);border:1px solid rgba(45,122,90,0.2);border-radius:8px;font-size:0.85rem;color:var(--emerald-l);margin-bottom:8px" id="answer-display-${c.chat_id}">
+               ✓ ${escHtml(c.answer||'')}
+             </div>
+             <div id="edit-area-${c.chat_id}" style="display:none">
+               <div class="admin-chat-item__reply-area mt-2">
+                 <input class="field__input" type="text" id="reply-${c.chat_id}" value="${escHtml(c.answer||'')}" placeholder="উত্তর সম্পাদনা করুন…"/>
+                 <button class="btn btn--success btn--sm" onclick="adminReply('${c.chat_id}', true)">✓ আপডেট</button>
+               </div>
+             </div>
+             <button class="btn btn--ghost btn--sm" onclick="toggleEditReply('${c.chat_id}')">✏️ সম্পাদনা করুন</button>`
+          : `<div class="admin-chat-item__reply-area mt-2">
+               <input class="field__input" type="text" id="reply-${c.chat_id}" placeholder="উত্তর লিখুন…"/>
+               <button class="btn btn--success btn--sm" onclick="adminReply('${c.chat_id}', false)">উত্তর দিন</button>
+             </div>`}
+      </div>`;
+    }).join('')}`;
+
+  // Auto-refresh প্রতি ৩০ সেকেন্ডে
+  if (ADMIN_QA_TIMER) clearTimeout(ADMIN_QA_TIMER);
+  ADMIN_QA_TIMER = setTimeout(loadAdminData, 30000);
 }
 
-async function adminReply(chat_id) {
+function toggleEditReply(chat_id) {
+  const editArea = document.getElementById(`edit-area-${chat_id}`);
+  const display  = document.getElementById(`answer-display-${chat_id}`);
+  const isShowing = editArea.style.display !== 'none';
+  editArea.style.display = isShowing ? 'none' : 'block';
+  display.style.display  = isShowing ? 'block' : 'none';
+}
+
+async function adminReply(chat_id, isEdit=false) {
   const answer = document.getElementById(`reply-${chat_id}`).value.trim();
   if (!answer) { toast('আগে উত্তর লিখুন','err'); return; }
   loading(true);
   try {
     const res = await apiPost({ action:'replyChatQuestion', chat_id, answer, modified_by:'admin' });
     if (!res.success) { toast(res.message,'err'); return; }
-    toast('✓ উত্তর পাঠানো হয়েছে','ok'); loadAdminData();
-  } catch { toast('Failed','err'); } finally { loading(false); }
+    toast(isEdit ? '✓ উত্তর আপডেট হয়েছে' : '✓ উত্তর পাঠানো হয়েছে','ok');
+    loadAdminData();
+  } catch(e) { console.error(e); toast('Failed','err'); } finally { loading(false); }
 }
 
 async function loadAdminAudit() {
@@ -2691,6 +2785,52 @@ function switchAdminTab(name, btn) {
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById(`tab-${name}`).classList.add('active');
   btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ADMIN SETTINGS
+// ═══════════════════════════════════════════════════════════
+function loadSettingsTab() {
+  const el = document.getElementById('api-url-input');
+  if (el) el.value = API_URL;
+}
+
+async function changeAdminPin() {
+  const oldPin     = document.getElementById('old-pin-input').value;
+  const newPin     = document.getElementById('new-pin-input').value;
+  const confirmPin = document.getElementById('confirm-pin-input').value;
+
+  if (!oldPin) { toast('আগের পিন দিন', 'err'); return; }
+  if (newPin.length < 6) { toast('নতুন পিন কমপক্ষে ৬ অক্ষর হতে হবে', 'err'); return; }
+  if (newPin !== confirmPin) { toast('নতুন পিন দুটো মিলছে না', 'err'); return; }
+
+  // আগের পিন যাচাই করুন
+  const oldHash = await sha256(oldPin);
+  const savedHash = localStorage.getItem('salat_admin_pin_hash') || await sha256('786786');
+  if (oldHash !== savedHash) { toast('আগের পিন সঠিক নয় ✗', 'err'); return; }
+
+  const newHash = await sha256(newPin);
+  localStorage.setItem('salat_admin_pin_hash', newHash);
+  toast('✓ পিন সফলভাবে পরিবর্তিত হয়েছে', 'ok');
+  document.getElementById('old-pin-input').value = '';
+  document.getElementById('new-pin-input').value = '';
+  document.getElementById('confirm-pin-input').value = '';
+}
+
+function saveApiUrl() {
+  const url = document.getElementById('api-url-input').value.trim();
+  if (!url.startsWith('https://script.google.com')) { toast('সঠিক Google Apps Script URL দিন', 'err'); return; }
+  API_URL = url;
+  localStorage.setItem('salat_api_url', url);
+  toast('✓ API URL সেভ হয়েছে। এখন লগইন চেষ্টা করুন।', 'ok');
+}
+
+function lockAdminPanel() {
+  document.getElementById('admin-gate').style.display  = 'block';
+  document.getElementById('admin-panel').style.display = 'none';
+  document.getElementById('admin-pin').value = '';
+  if (ADMIN_QA_TIMER) clearTimeout(ADMIN_QA_TIMER);
+  toast('প্যানেল লক করা হয়েছে', 'info');
 }
 
 // ═══════════════════════════════════════════════════════════
