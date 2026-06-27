@@ -142,11 +142,11 @@ body::before {
    BOTTOM NAV
 ═══════════════════════════════════════════════════════════ */
 .bottomnav {
-  position:fixed; bottom:0; left:0; right:0; z-index:100;
-  background: rgba(13,15,20,0.92);
+  position:fixed; bottom:0; left:0; right:0; z-index:9999;
+  background: rgba(13,15,20,0.96);
   backdrop-filter:blur(18px);
   border-top:1px solid var(--border);
-  display:flex;
+  display:flex !important;
   padding-bottom: env(safe-area-inset-bottom);
 }
 [data-theme="light"] .bottomnav { background:rgba(245,243,238,0.92); }
@@ -1028,8 +1028,12 @@ select.field__input { appearance:none; }
         </div>
         <div class="auth-divider">or</div>
         <div class="field" style="margin-bottom:0">
-          <label class="field__label">হোয়াটসঅ্যাপ লিঙ্ক (ঐচ্ছিক)</label>
-          <input class="field__input" type="url" id="auth-wa" placeholder="https://wa.me/880..."/>
+          <label class="field__label">হোয়াটসঅ্যাপ নম্বর (ঐচ্ছিক)</label>
+          <div class="phone-prefix">
+            <span class="phone-prefix__code">🇧🇩 +880</span>
+            <input class="field__input" type="tel" id="auth-wa" placeholder="01XXXXXXXXX" maxlength="11" inputmode="numeric"/>
+          </div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">হোয়াটসঅ্যাপ নম্বর দিন — ইমাম যোগাযোগ করতে পারবেন</div>
         </div>
       </div>
 
@@ -1041,8 +1045,37 @@ select.field__input { appearance:none; }
       </div>
 
       <div style="margin-top:28px;text-align:center">
-        <button class="btn btn--ghost btn--sm" onclick="loginAsAdmin()">🔐 ইমাম / অ্যাডমিন প্রবেশ</button>
+        <button class="btn btn--ghost btn--sm" onclick="goToAdminGate()">🔐 ইমাম / অ্যাডমিন প্রবেশ</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       ADMIN STANDALONE GATE SCREEN
+       (auth screen থেকে আসা — session ছাড়া)
+  ═══════════════════════════════════════ -->
+  <div id="screen-admin-standalone" style="display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:20px;background:var(--bg)">
+    <div style="width:100%;max-width:380px">
+      <button class="btn btn--ghost btn--sm" onclick="backFromAdminGate()" style="margin-bottom:24px">← সাধারণ লগইনে ফিরুন</button>
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="font-size:52px;margin-bottom:12px">🔐</div>
+        <div style="font-size:1.4rem;font-weight:700;color:var(--text-primary)">ইমাম / অ্যাডমিন প্যানেল</div>
+        <div style="font-size:0.8rem;color:var(--text-muted);margin-top:6px">শুধুমাত্র অনুমোদিত ব্যক্তির জন্য</div>
+      </div>
+      <div class="card card--gold">
+        <div class="field" style="margin-bottom:0">
+          <label class="field__label">অ্যাডমিন পিন</label>
+          <div class="pin-input-wrap">
+            <input class="field__input" type="password" id="admin-pin-standalone"
+                   placeholder="পিন দিন" maxlength="20"
+                   onkeydown="if(event.key==='Enter')unlockAdminStandalone()"
+                   style="padding-right:44px"/>
+            <button class="pin-eye" onclick="toggleStandalonePinVisibility()" title="দেখান">👁️</button>
+          </div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px">ডিফল্ট পিন: 786786</div>
+        </div>
+      </div>
+      <button class="btn btn--primary btn--full mt-4" onclick="unlockAdminStandalone()">🔓 প্যানেল খুলুন</button>
     </div>
   </div>
 
@@ -1291,12 +1324,87 @@ select.field__input { appearance:none; }
       </div>
     </div>
 
+    <!-- SCREEN: SETTINGS (সব ইউজারের জন্য) -->
+    <div id="screen-settings" class="screen">
+      <div class="container gap-y">
+
+        <!-- প্রোফাইল কার্ড -->
+        <div class="card card--gold">
+          <div class="section-hd">
+            <div class="section-hd__title">👤 আমার প্রোফাইল</div>
+          </div>
+          <div id="settings-profile-info" style="font-size:0.9rem;color:var(--text-body);line-height:2">
+            <div>নাম: <strong id="sp-name" style="color:var(--text-primary)">—</strong></div>
+            <div>ফোন: <strong id="sp-phone" style="color:var(--text-primary)">—</strong></div>
+          </div>
+          <button class="btn btn--danger btn--sm btn--full mt-4" onclick="logout()">🚪 লগ আউট করুন</button>
+        </div>
+
+        <!-- পাসওয়ার্ড / পিন রিসেট -->
+        <div class="card">
+          <div class="section-hd">
+            <div class="section-hd__title">🔑 পাসওয়ার্ড রিসেট</div>
+          </div>
+          <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:16px">
+            অ্যাডমিন পিন পরিবর্তন করতে চাইলে নিচে বর্তমান পিন ও নতুন পিন দিন।
+          </p>
+          <div class="field">
+            <label class="field__label">বর্তমান পিন</label>
+            <input class="field__input" type="password" id="user-old-pin" placeholder="বর্তমান পিন"/>
+          </div>
+          <div class="field">
+            <label class="field__label">নতুন পিন (কমপক্ষে ৬ অক্ষর)</label>
+            <input class="field__input" type="password" id="user-new-pin" placeholder="নতুন পিন"/>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label class="field__label">নতুন পিন নিশ্চিত করুন</label>
+            <input class="field__input" type="password" id="user-confirm-pin" placeholder="আবার নতুন পিন"/>
+          </div>
+          <button class="btn btn--primary btn--full mt-4" onclick="changeUserPin()">✓ পিন পরিবর্তন করুন</button>
+        </div>
+
+        <!-- API URL সংযোগ -->
+        <div class="card">
+          <div class="section-hd">
+            <div class="section-hd__title">🌐 সার্ভার সংযোগ (URL)</div>
+          </div>
+          <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:16px">
+            Google Apps Script URL সেট করুন। নতুন URL দিলে সংযোগ সক্রিয় হবে।
+          </p>
+          <div id="settings-url-status" style="display:none;margin-bottom:12px"></div>
+          <div class="field" style="margin-bottom:0">
+            <label class="field__label">Google Apps Script URL</label>
+            <input class="field__input" type="url" id="user-api-url-input" placeholder="https://script.google.com/macros/s/.../exec"/>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn--ghost btn--sm" style="flex:1" onclick="testApiUrl()">🔍 পরীক্ষা করুন</button>
+            <button class="btn btn--primary btn--sm" style="flex:1" onclick="saveUserApiUrl()">💾 সেভ করুন</button>
+          </div>
+        </div>
+
+        <!-- থিম -->
+        <div class="card">
+          <div class="section-hd">
+            <div class="section-hd__title">🎨 থিম পরিবর্তন</div>
+          </div>
+          <button class="btn btn--ghost btn--full" onclick="toggleTheme()">
+            <span id="theme-toggle-label">🌙 / ☀️ থিম পরিবর্তন করুন</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
     <!-- SCREEN: ADMIN -->
     <div id="screen-admin" class="screen">
       <div class="container--wide">
 
         <!-- Gate (password protected with hashing) -->
         <div id="admin-gate" class="admin-gate">
+          <!-- সাধারণ user দের জন্য back button -->
+          <div style="text-align:left;margin-bottom:16px" id="admin-gate-back-wrap">
+            <button class="btn btn--ghost btn--sm" onclick="switchScreen('home', document.getElementById('nav-home'))">← ফিরে যান</button>
+          </div>
           <div class="admin-gate__icon">🔐</div>
           <div class="section-hd__title mb-4" style="margin-bottom:16px">ইমাম / অ্যাডমিন প্যানেল</div>
           <div class="card" style="max-width:340px;margin:0 auto">
@@ -1329,8 +1437,11 @@ select.field__input { appearance:none; }
         <!-- Panel content (hidden until unlocked) -->
         <div id="admin-panel" style="display:none; padding:0 0 20px;">
           <div class="section-hd" style="margin-bottom:16px">
-            <div class="section-hd__title">ইমাম ড্যাশবোর্ড</div>
-            <span class="label-tag">অ্যাডমিন</span>
+            <div style="display:flex;align-items:center;gap:10px">
+              <button class="btn btn--ghost btn--sm" onclick="switchScreen('home', document.getElementById('nav-home'))" style="flex-shrink:0">← ফিরে</button>
+              <div class="section-hd__title">ইমাম ড্যাশবোর্ড</div>
+            </div>
+            <button class="btn btn--ghost btn--sm" onclick="lockAdminPanel()" style="flex-shrink:0">🔒 লক</button>
           </div>
 
           <!-- Stats Row -->
@@ -1364,23 +1475,68 @@ select.field__input { appearance:none; }
 
           <!-- Charts tab -->
           <div class="tab-panel" id="tab-charts">
-            <div class="chart-grid">
-              <div class="chart-card">
-                <div class="chart-card__title">🕌 মসজিদ বনাম বাড়ি বনাম মিস</div>
-                <div class="chart-wrap"><canvas id="chart-donut"></canvas></div>
+            <!-- সারসংক্ষেপ কার্ড -->
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px">
+              <div class="chart-card" style="padding:14px;text-align:center">
+                <div style="font-size:1.6rem;font-weight:700;color:var(--gold)" id="cstat-mosque-pct">—</div>
+                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">মসজিদ হার</div>
               </div>
-              <div class="chart-card">
-                <div class="chart-card__title">📈 দৈনিক উপস্থিতি (শেষ ১৪ দিন)</div>
-                <div class="chart-wrap"><canvas id="chart-line"></canvas></div>
+              <div class="chart-card" style="padding:14px;text-align:center">
+                <div style="font-size:1.6rem;font-weight:700;color:var(--emerald-l)" id="cstat-streak-avg">—</div>
+                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">গড় স্ট্রিক (দিন)</div>
+              </div>
+              <div class="chart-card" style="padding:14px;text-align:center">
+                <div style="font-size:1.6rem;font-weight:700;color:var(--rose-l)" id="cstat-miss-pct">—</div>
+                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">মিস হার</div>
+              </div>
+              <div class="chart-card" style="padding:14px;text-align:center">
+                <div style="font-size:1.6rem;font-weight:700;color:var(--text-primary)" id="cstat-active">—</div>
+                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">সক্রিয় (৭ দিনে)</div>
               </div>
             </div>
+
+            <!-- ১. ওয়াক্তভিত্তিক মসজিদ হার — Radar -->
             <div class="chart-card">
-              <div class="chart-card__title">👤 সেরা ১০ সদস্য (ধারাবাহিকতা অনুযায়ী)</div>
+              <div class="chart-card__title">🕌 ওয়াক্তভিত্তিক মসজিদে নামাজের হার</div>
+              <div class="chart-wrap"><canvas id="chart-radar"></canvas></div>
+            </div>
+
+            <!-- ২. ৫ ওয়াক্ত পাশাপাশি বার — কত জন কোথায় পড়ছে -->
+            <div class="chart-card">
+              <div class="chart-card__title">📊 ওয়াক্তভিত্তিক সালাতের বিস্তারিত</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:0.72rem">
+                <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#2D7A5A;border-radius:2px;display:inline-block"></span>মসজিদ</span>
+                <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#C9A84C;border-radius:2px;display:inline-block"></span>বাড়ি</span>
+                <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#4A6FA5;border-radius:2px;display:inline-block"></span>সফর</span>
+                <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#C0444A;border-radius:2px;display:inline-block"></span>মিস</span>
+              </div>
+              <div class="chart-wrap chart-wrap--tall"><canvas id="chart-waqt-bar"></canvas></div>
+            </div>
+
+            <!-- ৩. দৈনিক ট্রেন্ড — শেষ ১৪ দিন -->
+            <div class="chart-card">
+              <div class="chart-card__title">📈 দৈনিক উপস্থিতির ধারা (শেষ ১৪ দিন)</div>
+              <div class="chart-wrap"><canvas id="chart-line"></canvas></div>
+            </div>
+
+            <!-- ৪. সামগ্রিক ডোনাট -->
+            <div class="chart-card">
+              <div class="chart-card__title">🥧 সামগ্রিক সালাত বিভাজন</div>
+              <div class="chart-wrap"><canvas id="chart-donut"></canvas></div>
+            </div>
+
+            <!-- ৫. সেরা ১০ সদস্য -->
+            <div class="chart-card">
+              <div class="chart-card__title">🏆 সেরা ১০ সদস্য (মসজিদ সালাত)</div>
               <div class="chart-wrap chart-wrap--tall"><canvas id="chart-bar"></canvas></div>
             </div>
+
+            <!-- ৬. তাকবীরে তাহরিমা ট্র্যাক -->
             <div class="chart-card">
-              <div class="chart-card__title">🕐 ওয়াক্তভিত্তিক উপস্থিতির হার</div>
-              <div class="chart-wrap"><canvas id="chart-radar"></canvas></div>
+              <div class="chart-card__title">🟢 তাকবীরে তাহরিমার সাথে সালাত (আজকের)</div>
+              <div id="chart-takbeer-list" style="padding:8px 0">
+                <div class="empty-state" style="padding:20px"><span class="emoji">⏳</span>লোড হচ্ছে…</div>
+              </div>
             </div>
           </div>
 
@@ -1444,15 +1600,16 @@ select.field__input { appearance:none; }
       </div>
     </div>
 
-    <!-- BOTTOM NAV -->
-    <nav class="bottomnav">
-      <button class="bottomnav__item active" id="nav-home"      onclick="switchScreen('home',      this)"><span class="icon">🕌</span>নামাজ</button>
-      <button class="bottomnav__item"        id="nav-deeds"     onclick="switchScreen('deeds',     this)"><span class="icon">📜</span>আমল</button>
-      <button class="bottomnav__item"        id="nav-community" onclick="switchScreen('community', this)"><span class="icon">🤝</span>কমিউনিটি</button>
-      <button class="bottomnav__item"        id="nav-admin"     onclick="switchScreen('admin',     this)"><span class="icon">⚙️</span>অ্যাডমিন</button>
-    </nav>
-
   </div><!-- /screen-main -->
+
+  <!-- ═══ BOTTOM NAV — screen-main এর বাইরে, সবসময় fixed ═══ -->
+  <nav class="bottomnav" id="main-bottomnav" style="display:none">
+    <button class="bottomnav__item active" id="nav-home"      onclick="switchScreen('home',      this)"><span class="icon">🕌</span>নামাজ</button>
+    <button class="bottomnav__item"        id="nav-deeds"     onclick="switchScreen('deeds',     this)"><span class="icon">📜</span>আমল</button>
+    <button class="bottomnav__item"        id="nav-community" onclick="switchScreen('community', this)"><span class="icon">🤝</span>কমিউনিটি</button>
+    <button class="bottomnav__item"        id="nav-settings"  onclick="switchScreen('settings',  this)"><span class="icon">⚙️</span>সেটিংস</button>
+    <button class="bottomnav__item"        id="nav-admin"     onclick="switchScreen('admin',     this)" style="display:none"><span class="icon">🔐</span>অ্যাডমিন</button>
+  </nav>
 
 <!-- ═══════════ MANUAL PRAYER TIME MODAL ═══════════ -->
 <div class="modal-overlay" id="manual-time-modal">
@@ -1520,7 +1677,7 @@ select.field__input { appearance:none; }
 // ═══════════════════════════════════════════════════════════
 //  CONFIG — API URL (localStorage থেকে নেওয়া হয়)
 // ═══════════════════════════════════════════════════════════
-let API_URL = localStorage.getItem('salat_api_url') || 'https://script.google.com/macros/s/AKfycbwsR6FAmf3mVhAa9AilphGoJH1jb-OJGxmnqssfW1FTyjh47oKxzAKvx7VkihuCJHWJUw/exec';
+let API_URL = localStorage.getItem('salat_api_url') || 'https://script.google.com/macros/s/AKfycbxiun0hi6fyJxA3y9dwVgd0I-o0BOazkOI7ziz5Ss-VdIuiDBQXiESCo4u3yoxIfSot/exec';
 
 // ═══════════════════════════════════════════════════════════
 //  API HELPERS — CORS fix (Content-Type: text/plain)
@@ -1605,6 +1762,11 @@ function onPinInput(val) {
 
   const hints = ['', 'দুর্বল — অনেক ছোট', 'মোটামুটি — আরো বড় করুন', 'ভালো', 'শক্তিশালী ✓'];
   document.getElementById('pin-hint').textContent = hints[strength] || 'Enter PIN';
+}
+
+function toggleStandalonePinVisibility() {
+  const inp = document.getElementById('admin-pin-standalone');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
 function togglePinVisibility() {
@@ -2107,9 +2269,19 @@ function applyTheme() {
 async function handleAuth() {
   const name  = document.getElementById('auth-name').value.trim();
   const phone = document.getElementById('auth-phone').value.trim();
-  const wa    = document.getElementById('auth-wa').value.trim();
+  const waRaw = document.getElementById('auth-wa').value.trim();
 
   if (!phone || phone.length < 10) { toast('সঠিক ফোন নম্বর দিন', 'err'); return; }
+
+  // WhatsApp number → wa.me link auto-convert
+  let wa = '';
+  if (waRaw) {
+    const waDigits = waRaw.replace(/\D/g,'');
+    if (waDigits.startsWith('880'))   wa = `https://wa.me/${waDigits}`;
+    else if (waDigits.startsWith('0')) wa = `https://wa.me/880${waDigits.slice(1)}`;
+    else if (waDigits.length >= 10)   wa = `https://wa.me/880${waDigits}`;
+    else wa = waRaw;
+  }
 
   loading(true);
   try {
@@ -2117,8 +2289,10 @@ async function handleAuth() {
     if (check.success) {
       const existing = check.data.find(u => u.phone === phone || u.phone === '0'+phone);
       if (existing) {
-        saveSession({ ...existing, is_admin:false });
-        toast(`স্বাগতম ফিরে এলেন, ${existing.name}!`, 'ok');
+        // পুরনো সেশন ডেটা মুছে নতুন করে সার্ভার থেকে লোড করো
+        const freshSession = { ...existing, is_admin: false };
+        saveSession(freshSession);
+        toast(`স্বাগতম ফিরে এলেন, ${existing.name}! আপনার পুরনো ডেটা লোড হচ্ছে…`, 'ok');
         enterApp(); return;
       }
     }
@@ -2132,36 +2306,105 @@ async function handleAuth() {
   finally   { loading(false); }
 }
 
+// ═══════════════════════════════════════════════════════════
+//  ADMIN GATE — auth screen থেকে সরাসরি admin gate এ যাওয়া
+//  (session ছাড়াই, শুধু pin দিয়ে)
+// ═══════════════════════════════════════════════════════════
+function goToAdminGate() {
+  // auth screen লুকাও, admin-only screen দেখাও
+  document.getElementById('screen-auth').style.display = 'none';
+  document.getElementById('screen-admin-standalone').style.display = 'flex';
+}
+
+function backFromAdminGate() {
+  document.getElementById('screen-admin-standalone').style.display = 'none';
+  document.getElementById('screen-auth').style.display = 'flex';
+}
+
+async function unlockAdminStandalone() {
+  const pin = document.getElementById('admin-pin-standalone').value;
+  if (!pin) { toast('পিন দিন', 'err'); return; }
+
+  const hash       = await sha256(pin);
+  const defaultH   = await sha256('786786');
+  const savedHash  = localStorage.getItem('salat_admin_pin_hash') || defaultH;
+
+  if (hash !== savedHash) { toast('পিন সঠিক নয় ✗', 'err'); return; }
+  if (!localStorage.getItem('salat_admin_pin_hash')) {
+    localStorage.setItem('salat_admin_pin_hash', defaultH);
+  }
+
+  saveSession({ user_id:'admin', name:'ইমাম / অ্যাডমিন', phone:'', whatsapp_link:'', is_admin:true });
+  document.getElementById('screen-admin-standalone').style.display = 'none';
+  document.getElementById('screen-main').style.display = 'block';
+  document.getElementById('greeting-name').textContent = 'ইমাম';
+  document.getElementById('greeting-text').textContent = greetingText();
+  document.getElementById('nav-admin').style.display = '';
+  switchScreen('admin', document.getElementById('nav-admin'));
+  loadAdminData();
+  refreshPrayerTimes();
+  updateNotifStatusBar();
+  toast('✓ ইমাম প্যানেলে স্বাগতম', 'ok');
+}
+
 function loginAsAdmin() {
-  saveSession({ user_id:'admin', name:'Imam / Admin', phone:'', whatsapp_link:'', is_admin:true });
-  toast('অ্যাডমিন সেশনে প্রবেশ হয়েছে', 'info');
-  enterApp();
-  setTimeout(() => switchScreen('admin', document.getElementById('nav-admin')), 300);
+  goToAdminGate();
 }
 
 function enterApp() {
-  document.getElementById('screen-auth').style.display = 'none';
-  document.getElementById('screen-main').style.display = 'block';
-  document.getElementById('greeting-name').textContent = SESSION.name;
-  document.getElementById('greeting-text').textContent = greetingText();
-  initWaqtGrid();
-  loadStreakData();
-  loadDeedsTimeline();
-  loadChatThread();
-  // Prayer times + notifications
+  document.getElementById('screen-auth').style.display  = 'none';
+  document.getElementById('screen-admin-standalone').style.display = 'none';
+  document.getElementById('screen-main').style.display  = 'block';
+  document.getElementById('main-bottomnav').style.display = 'flex'; // ← দেখাও
+  document.getElementById('greeting-name').textContent  = SESSION.name;
+  document.getElementById('greeting-text').textContent  = greetingText();
+
+  // Admin nav: শুধু admin দেখবে
+  document.getElementById('nav-admin').style.display = SESSION.is_admin ? '' : 'none';
+
+  // সবার জন্য common init
   refreshPrayerTimes();
   updateNotifStatusBar();
   if (Notification.permission === 'granted') renderNotifSettings();
   updateStoredHashDisplay();
+
+  if (SESSION.is_admin) {
+    // Admin: সরাসরি admin screen
+    switchScreen('admin', document.getElementById('nav-admin'));
+    loadAdminData();
+  } else {
+    // সাধারণ user: home screen — সার্ভার থেকে সব ডেটা রিফ্রেশ করো
+    switchScreen('home', document.getElementById('nav-home'));
+    initWaqtGrid();
+    // সার্ভার থেকে পুরনো ডেটা লোড (streak, deeds, chat)
+    loadStreakData();
+    loadDeedsTimeline();
+    loadChatThread();
+    loadPublicQA();
+  }
 }
 
 function logout() {
   if (COUNTDOWN_TIMER) clearInterval(COUNTDOWN_TIMER);
   NOTIF_TIMERS.forEach(t => clearTimeout(t));
+  if (ADMIN_QA_TIMER) clearTimeout(ADMIN_QA_TIMER);
+  if (CHAT_REFRESH_TIMER) clearTimeout(CHAT_REFRESH_TIMER);
   localStorage.removeItem('salat_session');
   SESSION = null;
-  document.getElementById('screen-auth').style.display = 'flex';
   document.getElementById('screen-main').style.display = 'none';
+  document.getElementById('main-bottomnav').style.display = 'none'; // ← লুকাও
+  document.getElementById('screen-admin-standalone').style.display = 'none';
+  document.getElementById('screen-auth').style.display = 'flex';
+  // admin pin clear
+  const pinEl = document.getElementById('admin-pin-standalone');
+  if (pinEl) pinEl.value = '';
+  // admin panel lock
+  const gateEl = document.getElementById('admin-gate');
+  const panelEl = document.getElementById('admin-panel');
+  if (gateEl) gateEl.style.display = 'block';
+  if (panelEl) panelEl.style.display = 'none';
+  // nav reset
+  document.getElementById('nav-admin').style.display = 'none';
   document.getElementById('auth-name').value = '';
   document.getElementById('auth-phone').value = '';
   toast('লগ আউট হয়েছে', 'info');
@@ -2170,12 +2413,36 @@ function logout() {
 // ═══════════════════════════════════════════════════════════
 //  SCREEN NAVIGATION
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  SCREEN NAVIGATION
+// ═══════════════════════════════════════════════════════════
+const INNER_SCREENS = ['home','deeds','community','settings','admin'];
+
 function switchScreen(name, btn) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  // শুধু main app এর ভেতরের screen গুলো toggle করো
+  INNER_SCREENS.forEach(s => {
+    const el = document.getElementById(`screen-${s}`);
+    if (el) el.classList.remove('active');
+  });
   document.querySelectorAll('.bottomnav__item').forEach(b => b.classList.remove('active'));
-  document.getElementById(`screen-${name}`).classList.add('active');
-  btn.classList.add('active');
+
+  const target = document.getElementById(`screen-${name}`);
+  if (target) target.classList.add('active');
+  if (btn) btn.classList.add('active');
+
+  // সাধারণ user admin screen দেখতে পাবে না
+  if (name === 'admin' && SESSION && !SESSION.is_admin) {
+    INNER_SCREENS.forEach(s => {
+      const el = document.getElementById(`screen-${s}`);
+      if (el) el.classList.remove('active');
+    });
+    document.getElementById('screen-home').classList.add('active');
+    document.getElementById('nav-home').classList.add('active');
+    return;
+  }
+
   if (name === 'community') { loadChatThread(); loadPublicQA(); }
+  if (name === 'settings')  { loadUserSettingsScreen(); }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2498,97 +2765,37 @@ function buildCharts(users, logs) {
   const { gridColor, textColor } = chartDefaults();
   Chart.defaults.color = textColor;
 
-  // 1. DONUT: Prayer status breakdown
-  destroyChart('donut');
-  const statusCounts = { '1':0, '2':0, '3':0, '0':0 };
-  logs.forEach(l => { if (statusCounts[l.status] !== undefined) statusCounts[l.status]++; });
-  CHARTS.donut = new Chart(document.getElementById('chart-donut'), {
-    type:'doughnut',
-    data:{
-      labels:['মসজিদ','বাড়ি','সফর','মিস'],
-      datasets:[{
-        data:[statusCounts['1'],statusCounts['2'],statusCounts['3'],statusCounts['0']],
-        backgroundColor:['#2D7A5A','#C9A84C','#4A6FA5','#C0444A'],
-        borderColor:'transparent', hoverOffset:6,
-      }],
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'bottom', labels:{ padding:12, font:{ size:11 } } } },
-      cutout:'65%',
-    },
-  });
+  // ── সারসংক্ষেপ stat কার্ড আপডেট ──────────────────────────
+  const totalLogs  = logs.length;
+  const mosqueLogs = logs.filter(l=>String(l.status)==='1').length;
+  const missLogs   = logs.filter(l=>String(l.status)==='0').length;
+  const mosqPct    = totalLogs ? Math.round(mosqueLogs/totalLogs*100) : 0;
+  const missPct    = totalLogs ? Math.round(missLogs/totalLogs*100) : 0;
 
-  // 2. LINE: Daily mosque % last 14 days
-  destroyChart('line');
-  const days14 = Array.from({length:14}, (_,i) => {
-    const d = new Date(); d.setDate(d.getDate() - (13-i));
-    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  });
-  const lineData = days14.map(date => {
-    const dl = logs.filter(l => String(l.date).substring(0,10) === date);
-    if (!dl.length) return null;
-    return Math.round(dl.filter(l=>String(l.status)==='1').length / dl.length * 100);
-  });
-  CHARTS.line = new Chart(document.getElementById('chart-line'), {
-    type:'line',
-    data:{
-      labels: days14.map(d=>d.slice(5)),
-      datasets:[{
-        label:'মসজিদ %', data:lineData,
-        borderColor:'#C9A84C', backgroundColor:'rgba(201,168,76,0.08)',
-        tension:0.4, fill:true, pointBackgroundColor:'#C9A84C',
-        pointRadius:4, pointHoverRadius:6, spanGaps:true,
-      }],
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{
-        y:{ min:0, max:100, grid:{ color:gridColor }, ticks:{ callback:v=>v+'%' } },
-        x:{ grid:{ color:gridColor }, ticks:{ font:{ size:10 } } },
-      },
-    },
-  });
+  // সক্রিয় সদস্য: শেষ ৭ দিনে অন্তত একটা লগ আছে
+  const cutoff7 = new Date(); cutoff7.setDate(cutoff7.getDate()-7);
+  const activeIds = new Set(logs.filter(l=>new Date(l.date||l.timestamp)>=cutoff7).map(l=>l.user_id));
 
-  // 3. BAR: Top 10 members by mosque log count
-  destroyChart('bar');
-  const userLogMap = {};
-  logs.filter(l=>String(l.status)==='1').forEach(l=>{
-    userLogMap[l.user_id]=(userLogMap[l.user_id]||0)+1;
-  });
-  const top10 = users
-    .map(u=>({ name:u.name, count:userLogMap[u.user_id]||0 }))
-    .sort((a,b)=>b.count-a.count).slice(0,10);
-  CHARTS.bar = new Chart(document.getElementById('chart-bar'), {
-    type:'bar',
-    data:{
-      labels:top10.map(u=>u.name.split(' ')[0]),
-      datasets:[{
-        label:'মসজিদ নামাজ', data:top10.map(u=>u.count),
-        backgroundColor:top10.map((_,i)=>i===0?'#C9A84C':i===1?'#8A7030':i===2?'#5A4A20':'rgba(201,168,76,0.3)'),
-        borderRadius:6, borderSkipped:false,
-      }],
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{
-        y:{ grid:{ color:gridColor }, beginAtZero:true },
-        x:{ grid:{ display:false }, ticks:{ font:{ size:11 } } },
-      },
-    },
-  });
+  const avgStreakEl = document.getElementById('cstat-streak-avg');
+  // সরল গড়: মোট mosque log / user count
+  const avgMosque = users.length ? Math.round(mosqueLogs/users.length) : 0;
 
-  // 4. RADAR: Per-waqt attendance rate
+  document.getElementById('cstat-mosque-pct').textContent = mosqPct + '%';
+  document.getElementById('cstat-miss-pct').textContent   = missPct + '%';
+  document.getElementById('cstat-active').textContent     = activeIds.size;
+  if (avgStreakEl) avgStreakEl.textContent = avgMosque;
+
+  // ── ১. RADAR — ওয়াক্তভিত্তিক মসজিদ হার ──────────────────
   destroyChart('radar');
   const waqtStats = {};
-  WAQT_LIST.forEach(w=>{ waqtStats[w.key]={ total:0, mosque:0 }; });
+  WAQT_LIST.forEach(w=>{ waqtStats[w.key]={ total:0, mosque:0, home:0, travel:0, missed:0 }; });
   logs.forEach(l=>{
-    if (waqtStats[l.waqt]) {
-      waqtStats[l.waqt].total++;
-      if (String(l.status)==='1') waqtStats[l.waqt].mosque++;
-    }
+    if (!waqtStats[l.waqt]) return;
+    waqtStats[l.waqt].total++;
+    if (String(l.status)==='1') waqtStats[l.waqt].mosque++;
+    else if (String(l.status)==='2') waqtStats[l.waqt].home++;
+    else if (String(l.status)==='3') waqtStats[l.waqt].travel++;
+    else waqtStats[l.waqt].missed++;
   });
   CHARTS.radar = new Chart(document.getElementById('chart-radar'), {
     type:'radar',
@@ -2596,27 +2803,193 @@ function buildCharts(users, logs) {
       labels: WAQT_LIST.map(w=>`${w.icon} ${w.key}`),
       datasets:[{
         label:'মসজিদ %',
-        data: WAQT_LIST.map(w=>{
-          const s=waqtStats[w.key];
-          return s.total?Math.round(s.mosque/s.total*100):0;
-        }),
-        backgroundColor:'rgba(45,122,90,0.15)',
-        borderColor:'#3DA876', pointBackgroundColor:'#3DA876', pointRadius:4,
+        data: WAQT_LIST.map(w=>waqtStats[w.key].total?Math.round(waqtStats[w.key].mosque/waqtStats[w.key].total*100):0),
+        backgroundColor:'rgba(45,122,90,0.18)',
+        borderColor:'#3DA876', pointBackgroundColor:'#3DA876', pointRadius:5,
+        borderWidth:2,
+      },{
+        label:'মিস %',
+        data: WAQT_LIST.map(w=>waqtStats[w.key].total?Math.round(waqtStats[w.key].missed/waqtStats[w.key].total*100):0),
+        backgroundColor:'rgba(192,68,74,0.1)',
+        borderColor:'#C0444A', pointBackgroundColor:'#C0444A', pointRadius:3,
+        borderDash:[4,3], borderWidth:1.5,
       }],
     },
     options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
+      plugins:{ legend:{ position:'bottom', labels:{ padding:10, font:{ size:10 } } } },
       scales:{
-        r:{
-          min:0, max:100,
-          grid:{ color:gridColor }, angleLines:{ color:gridColor },
-          ticks:{ display:false },
-          pointLabels:{ font:{ size:11 } },
+        r:{ min:0, max:100, grid:{ color:gridColor }, angleLines:{ color:gridColor },
+            ticks:{ display:false, stepSize:25 },
+            pointLabels:{ font:{ size:11 }, color:textColor },
         },
       },
     },
   });
+
+  // ── ২. GROUPED BAR — ৫ ওয়াক্ত × ৪ অবস্থা ─────────────────
+  destroyChart('waqt-bar');
+  CHARTS['waqt-bar'] = new Chart(document.getElementById('chart-waqt-bar'), {
+    type:'bar',
+    data:{
+      labels: WAQT_LIST.map(w=>`${w.icon} ${w.key}`),
+      datasets:[
+        { label:'মসজিদ', data:WAQT_LIST.map(w=>waqtStats[w.key].mosque),  backgroundColor:'#2D7A5A', borderRadius:4 },
+        { label:'বাড়ি',  data:WAQT_LIST.map(w=>waqtStats[w.key].home),    backgroundColor:'#C9A84C', borderRadius:4 },
+        { label:'সফর',   data:WAQT_LIST.map(w=>waqtStats[w.key].travel),  backgroundColor:'#4A6FA5', borderRadius:4 },
+        { label:'মিস',   data:WAQT_LIST.map(w=>waqtStats[w.key].missed),  backgroundColor:'#C0444A', borderRadius:4 },
+      ],
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{ padding:10, font:{ size:10 }, boxWidth:10 } },
+        tooltip:{
+          callbacks:{
+            afterBody: (items) => {
+              const wKey = WAQT_LIST[items[0].dataIndex].key;
+              const s = waqtStats[wKey];
+              return s.total ? `মোট: ${s.total} · মসজিদ ${Math.round(s.mosque/s.total*100)}%` : '';
+            }
+          }
+        }
+      },
+      scales:{
+        y:{ grid:{ color:gridColor }, beginAtZero:true, ticks:{ precision:0 } },
+        x:{ grid:{ display:false } },
+      },
+    },
+  });
+
+  // ── ৩. LINE — দৈনিক ট্রেন্ড ──────────────────────────────
+  destroyChart('line');
+  const days14 = Array.from({length:14},(_,i)=>{
+    const d=new Date(); d.setDate(d.getDate()-(13-i));
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  });
+  const lineDataMosque = days14.map(date=>{
+    const dl=logs.filter(l=>String(l.date||'').slice(0,10)===date);
+    return dl.length?Math.round(dl.filter(l=>String(l.status)==='1').length/dl.length*100):null;
+  });
+  const lineDataMiss = days14.map(date=>{
+    const dl=logs.filter(l=>String(l.date||'').slice(0,10)===date);
+    return dl.length?Math.round(dl.filter(l=>String(l.status)==='0').length/dl.length*100):null;
+  });
+  CHARTS.line = new Chart(document.getElementById('chart-line'), {
+    type:'line',
+    data:{
+      labels: days14.map(d=>d.slice(5)),
+      datasets:[
+        { label:'মসজিদ %', data:lineDataMosque,
+          borderColor:'#C9A84C', backgroundColor:'rgba(201,168,76,0.08)',
+          tension:0.4, fill:true, pointBackgroundColor:'#C9A84C', pointRadius:4, spanGaps:true },
+        { label:'মিস %', data:lineDataMiss,
+          borderColor:'#C0444A', backgroundColor:'rgba(192,68,74,0.05)',
+          tension:0.4, fill:true, pointBackgroundColor:'#C0444A', pointRadius:3, spanGaps:true,
+          borderDash:[4,3] },
+      ],
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{ padding:10, font:{ size:10 } } } },
+      scales:{
+        y:{ min:0, max:100, grid:{ color:gridColor }, ticks:{ callback:v=>v+'%' } },
+        x:{ grid:{ color:gridColor }, ticks:{ font:{ size:10 } } },
+      },
+    },
+  });
+
+  // ── ৪. DONUT — সামগ্রিক বিভাজন ───────────────────────────
+  destroyChart('donut');
+  const sc={ '1':0,'2':0,'3':0,'0':0 };
+  logs.forEach(l=>{ if(sc[l.status]!==undefined) sc[l.status]++; });
+  CHARTS.donut = new Chart(document.getElementById('chart-donut'), {
+    type:'doughnut',
+    data:{
+      labels:['মসজিদ','বাড়ি','সফর','মিস'],
+      datasets:[{ data:[sc['1'],sc['2'],sc['3'],sc['0']],
+        backgroundColor:['#2D7A5A','#C9A84C','#4A6FA5','#C0444A'],
+        borderColor:'transparent', hoverOffset:8 }],
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'bottom', labels:{ padding:12, font:{ size:11 } } },
+        tooltip:{ callbacks:{ label: ctx => {
+          const pct = totalLogs ? Math.round(ctx.raw/totalLogs*100) : 0;
+          return ` ${ctx.label}: ${ctx.raw} (${pct}%)`;
+        }}},
+      },
+      cutout:'65%',
+    },
+  });
+
+  // ── ৫. BAR — সেরা ১০ সদস্য ───────────────────────────────
+  destroyChart('bar');
+  const userMosqueMap={};
+  logs.filter(l=>String(l.status)==='1').forEach(l=>{ userMosqueMap[l.user_id]=(userMosqueMap[l.user_id]||0)+1; });
+  const top10=users.map(u=>({ name:u.name, count:userMosqueMap[u.user_id]||0 }))
+    .sort((a,b)=>b.count-a.count).slice(0,10);
+  CHARTS.bar = new Chart(document.getElementById('chart-bar'), {
+    type:'bar',
+    data:{
+      labels:top10.map(u=>u.name.split(' ')[0]),
+      datasets:[{ label:'মসজিদ সালাত', data:top10.map(u=>u.count),
+        backgroundColor:top10.map((_,i)=>i===0?'#C9A84C':i===1?'#A0802A':i===2?'#6A5420':'rgba(201,168,76,0.28)'),
+        borderRadius:6, borderSkipped:false }],
+    },
+    options:{
+      indexAxis:'y',  // ← অনুভূমিক বার — নাম পড়া সহজ
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false },
+        tooltip:{ callbacks:{ label: ctx => ` ${ctx.raw}টি মসজিদ সালাত` }} },
+      scales:{
+        x:{ grid:{ color:gridColor }, beginAtZero:true, ticks:{ precision:0 } },
+        y:{ grid:{ display:false }, ticks:{ font:{ size:11 } } },
+      },
+    },
+  });
+
+  // ── ৬. তাকবীরে তাহরিমা তালিকা ───────────────────────────
+  const today = new Date().toISOString().slice(0,10);
+  const todayLogs = logs.filter(l=>String(l.date||'').slice(0,10)===today);
+  const tkEl = document.getElementById('chart-takbeer-list');
+  if (tkEl) {
+    if (!todayLogs.length) {
+      tkEl.innerHTML = `<div class="empty-state" style="padding:16px"><span class="emoji">📅</span>আজকের কোনো লগ নেই।</div>`;
+    } else {
+      // ব্যবহারকারী × ওয়াক্ত গ্রিড
+      const userIds = [...new Set(todayLogs.map(l=>l.user_id))];
+      const rows = userIds.map(uid=>{
+        const uName = (users.find(u=>u.user_id===uid)||{}).name || uid;
+        const cells = WAQT_LIST.map(w=>{
+          const lg = todayLogs.find(l=>l.user_id===uid&&l.waqt===w.key);
+          if (!lg) return `<td style="text-align:center;color:var(--text-muted);font-size:11px">—</td>`;
+          const isMosque = String(lg.status)==='1';
+          const hasTk = lg.takbeer_with_imam==='1'||lg.takbeer_with_imam===1||lg.takbeer_with_imam===true;
+          return `<td style="text-align:center;font-size:14px" title="${w.key}: ${isMosque?(hasTk?'তাকবীরসহ মসজিদ ✓':'মসজিদ (তাকবীর ছাড়া)'):'মসজিদ নয়'}">
+            ${isMosque ? (hasTk ? '🟢' : '🕌') : (String(lg.status)==='0'?'❌':'⚪')}
+          </td>`;
+        }).join('');
+        return `<tr>
+          <td style="font-size:0.8rem;color:var(--text-body);padding:4px 6px;white-space:nowrap">${escHtml(uName)}</td>
+          ${cells}
+        </tr>`;
+      }).join('');
+      tkEl.innerHTML = `
+        <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:0.78rem">
+          <thead><tr style="color:var(--text-muted)">
+            <th style="text-align:left;padding:4px 6px">সদস্য</th>
+            ${WAQT_LIST.map(w=>`<th style="text-align:center;padding:4px">${w.icon}<br/><span style="font-size:9px">${w.key}</span></th>`).join('')}
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        </div>
+        <div style="margin-top:10px;font-size:0.7rem;color:var(--text-muted);display:flex;gap:12px;flex-wrap:wrap">
+          <span>🟢 তাকবীরসহ মসজিদ</span><span>🕌 মসজিদ (তাকবীর ছাড়া)</span><span>❌ মিস</span><span>⚪ বাড়ি/সফর</span>
+        </div>`;
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2626,27 +2999,64 @@ function renderUserList(users, logs) {
   const el = document.getElementById('admin-user-list');
   if (!users.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">👤</span>এখনো কোনো সদস্য নেই।</div>`; return; }
   el.innerHTML = users.map(u => {
-    const userLogs = logs.filter(l=>l.user_id===u.user_id);
-    const total    = userLogs.length;
-    const prayed   = userLogs.filter(l=>String(l.status)==='1').length;
-    const pct      = total ? Math.round(prayed/total*100) : 0;
-    const phone    = u.phone||'';
-    const wa       = u.whatsapp_link||(phone?`https://wa.me/880${phone.replace(/^0/,'')}`:'');
+    const userLogs  = logs.filter(l=>l.user_id===u.user_id);
+    const total     = userLogs.length;
+    const mosque    = userLogs.filter(l=>String(l.status)==='1').length;
+    const home      = userLogs.filter(l=>String(l.status)==='2').length;
+    const travel    = userLogs.filter(l=>String(l.status)==='3').length;
+    const missed    = userLogs.filter(l=>String(l.status)==='0').length;
+    const pct       = total ? Math.round(mosque/total*100) : 0;
+
+    // ফোন নম্বর: সবসময় ১১ ডিজিট (০ দিয়ে শুরু) রাখা
+    const rawPhone  = String(u.phone||'').trim();
+    // শুধু digit রাখি
+    const digitsOnly = rawPhone.replace(/\D/g,'');
+    // ১১ ডিজিটের বাংলাদেশি নম্বর → 01XXXXXXXXX
+    const displayPhone = digitsOnly.startsWith('880')
+      ? '0' + digitsOnly.slice(3)          // +8801... → 01...
+      : digitsOnly.startsWith('0')
+        ? digitsOnly                        // 01... → 01... (ঠিকঠাক)
+        : digitsOnly ? '0' + digitsOnly : '';// কোনো 0 নেই → সামনে 0 দাও
+
+    // tel: link এ +880 সহ আন্তর্জাতিক ফরম্যাট ব্যবহার করি
+    const telLink   = displayPhone ? '+880' + displayPhone.replace(/^0/,'') : '';
+    const wa        = u.whatsapp_link || (displayPhone ? `https://wa.me/880${displayPhone.replace(/^0/,'')}` : '');
+
+    // ওয়াক্তভিত্তিক আজকের সালাত
+    const today = new Date().toISOString().slice(0,10);
+    const todayLogs = userLogs.filter(l=>String(l.date||'').slice(0,10)===today);
+    const todayDots = ['Fajr','Dhuhr','Asr','Maghrib','Isha'].map(w=>{
+      const lg = todayLogs.find(l=>l.waqt===w);
+      const color = !lg ? '#3a3a3a' : lg.status==='1'?'#2D7A5A':lg.status==='2'?'#C9A84C':lg.status==='3'?'#4A6FA5':'#C0444A';
+      const icon  = !lg ? '○' : lg.status==='1'?'🕌':lg.status==='2'?'🏠':lg.status==='3'?'✈️':'✗';
+      return `<span title="${w}" style="font-size:${lg?'13px':'11px'};color:${color}">${icon}</span>`;
+    }).join('');
+
     return `
     <div class="user-card" id="ucard-${u.user_id}">
       <div class="user-card__avatar">👤</div>
-      <div class="user-card__info">
+      <div class="user-card__info" style="flex:1;min-width:0">
         <div class="user-card__name">${escHtml(u.name)}</div>
-        <div class="user-card__phone">${phone}</div>
-        <div class="attendance-bar-wrap">
-          <span style="font-size:0.68rem;color:var(--text-muted)">Mosque ${pct}%</span>
-          <div class="attendance-bar"><div class="attendance-bar__fill" style="width:${pct}%"></div></div>
+        <div class="user-card__phone" style="font-family:var(--font-mono);font-size:0.78rem;letter-spacing:0.03em;color:var(--text-muted)">${displayPhone||'—'}</div>
+        <!-- আজকের ওয়াক্ত ডট -->
+        <div style="display:flex;gap:5px;align-items:center;margin-top:4px" title="আজকের নামাজ: ফজর·যোহর·আসর·মাগরিব·এশা">
+          ${todayDots}
+        </div>
+        <!-- উপস্থিতি বার -->
+        <div class="attendance-bar-wrap" style="margin-top:5px">
+          <div style="display:flex;justify-content:space-between;font-size:0.67rem;color:var(--text-muted);margin-bottom:2px">
+            <span>🕌 ${mosque} &nbsp;🏠 ${home} &nbsp;✈️ ${travel} &nbsp;✗ ${missed}</span>
+            <span>${pct}%</span>
+          </div>
+          <div class="attendance-bar">
+            <div class="attendance-bar__fill" style="width:${pct}%"></div>
+          </div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-        <span class="user-card__streak">${total} logs</span>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-left:8px">
+        <span class="user-card__streak" style="font-family:var(--font-mono);font-size:0.7rem">${total} লগ</span>
         <div class="user-card__actions">
-          ${phone?`<a class="action-btn action-btn--call" href="tel:${phone}" title="কল করুন">📞</a>`:''}
+          ${telLink?`<a class="action-btn action-btn--call" href="tel:${telLink}" title="কল করুন: ${displayPhone}">📞</a>`:''}
           ${wa?`<a class="action-btn action-btn--wa" href="${wa}" target="_blank" title="হোয়াটসঅ্যাপ">💬</a>`:''}
         </div>
       </div>
@@ -2830,7 +3240,96 @@ function lockAdminPanel() {
   document.getElementById('admin-panel').style.display = 'none';
   document.getElementById('admin-pin').value = '';
   if (ADMIN_QA_TIMER) clearTimeout(ADMIN_QA_TIMER);
+  // Lock করার পর home এ ফিরে যাও
+  switchScreen('home', document.getElementById('nav-home'));
   toast('প্যানেল লক করা হয়েছে', 'info');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  USER SETTINGS (সব ইউজারের জন্য)
+// ═══════════════════════════════════════════════════════════
+function loadUserSettingsScreen() {
+  // প্রোফাইল তথ্য দেখান
+  if (SESSION) {
+    const nameEl  = document.getElementById('sp-name');
+    const phoneEl = document.getElementById('sp-phone');
+    if (nameEl)  nameEl.textContent  = SESSION.name  || '—';
+    if (phoneEl) phoneEl.textContent = SESSION.phone || '—';
+  }
+  // বর্তমান URL দেখান
+  const urlEl = document.getElementById('user-api-url-input');
+  if (urlEl) urlEl.value = API_URL || '';
+
+  // URL সংযোগ স্ট্যাটাস
+  renderUrlStatus();
+}
+
+function renderUrlStatus() {
+  const bar = document.getElementById('settings-url-status');
+  if (!bar) return;
+  if (API_URL && API_URL.startsWith('https://script.google.com')) {
+    bar.style.display = 'block';
+    bar.innerHTML = `<div style="padding:10px 14px;background:rgba(45,122,90,0.08);border:1px solid rgba(45,122,90,0.2);border-radius:var(--radius-sm);font-size:0.8rem;color:var(--emerald-l)">✅ সার্ভার সংযুক্ত আছে</div>`;
+  } else {
+    bar.style.display = 'block';
+    bar.innerHTML = `<div style="padding:10px 14px;background:rgba(192,68,74,0.08);border:1px solid rgba(192,68,74,0.2);border-radius:var(--radius-sm);font-size:0.8rem;color:var(--rose-l)">⚠️ কোনো URL সেট নেই। সংযোগ করুন।</div>`;
+  }
+}
+
+function saveUserApiUrl() {
+  const url = document.getElementById('user-api-url-input').value.trim();
+  if (!url.startsWith('https://script.google.com')) {
+    toast('সঠিক Google Apps Script URL দিন', 'err'); return;
+  }
+  API_URL = url;
+  localStorage.setItem('salat_api_url', url);
+  // Admin settings input-ও আপডেট করুন
+  const adminEl = document.getElementById('api-url-input');
+  if (adminEl) adminEl.value = url;
+  renderUrlStatus();
+  toast('✓ URL সেভ হয়েছে। এখন লগইন করুন।', 'ok');
+}
+
+async function testApiUrl() {
+  const url = document.getElementById('user-api-url-input').value.trim();
+  if (!url.startsWith('https://script.google.com')) {
+    toast('প্রথমে সঠিক URL দিন', 'err'); return;
+  }
+  toast('সংযোগ পরীক্ষা হচ্ছে…', 'info');
+  loading(true);
+  try {
+    const res = await fetch(`${url}?action=getUsers`);
+    const data = await res.json();
+    if (data.success !== undefined) {
+      toast('✅ সংযোগ সফল! URL কাজ করছে।', 'ok');
+    } else {
+      toast('⚠️ সার্ভার সাড়া দিয়েছে কিন্তু ফরম্যাট অপরিচিত।', 'err');
+    }
+  } catch {
+    toast('❌ সংযোগ ব্যর্থ। URL চেক করুন।', 'err');
+  } finally { loading(false); }
+}
+
+async function changeUserPin() {
+  const oldPin     = document.getElementById('user-old-pin').value;
+  const newPin     = document.getElementById('user-new-pin').value;
+  const confirmPin = document.getElementById('user-confirm-pin').value;
+
+  if (!oldPin) { toast('বর্তমান পিন দিন', 'err'); return; }
+  if (newPin.length < 6) { toast('নতুন পিন কমপক্ষে ৬ অক্ষর হতে হবে', 'err'); return; }
+  if (newPin !== confirmPin) { toast('নতুন পিন দুটো মিলছে না', 'err'); return; }
+
+  const oldHash  = await sha256(oldPin);
+  const defaultH = await sha256('786786');
+  const savedHash = localStorage.getItem('salat_admin_pin_hash') || defaultH;
+  if (oldHash !== savedHash) { toast('বর্তমান পিন সঠিক নয় ✗', 'err'); return; }
+
+  const newHash = await sha256(newPin);
+  localStorage.setItem('salat_admin_pin_hash', newHash);
+  toast('✓ পিন সফলভাবে পরিবর্তিত হয়েছে', 'ok');
+  document.getElementById('user-old-pin').value = '';
+  document.getElementById('user-new-pin').value = '';
+  document.getElementById('user-confirm-pin').value = '';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2840,18 +3339,10 @@ function lockAdminPanel() {
   applyTheme();
   loadSession();
   updateStoredHashDisplay();
+
   if (SESSION) {
-    document.getElementById('screen-auth').style.display  = 'none';
-    document.getElementById('screen-main').style.display = 'block';
-    document.getElementById('greeting-name').textContent  = SESSION.name;
-    document.getElementById('greeting-text').textContent  = greetingText();
-    initWaqtGrid();
-    loadStreakData();
-    loadDeedsTimeline();
-    loadChatThread();
-    refreshPrayerTimes();
-    updateNotifStatusBar();
-    if (Notification.permission === 'granted') renderNotifSettings();
+    // session আছে → সরাসরি app এ ঢোকো
+    enterApp();
   }
 })();
 </script>
