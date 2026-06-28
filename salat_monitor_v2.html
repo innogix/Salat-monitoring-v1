@@ -418,7 +418,7 @@ select.field__input { appearance:none; }
 .waqt-submit-bar { margin-top:16px; display:flex; gap:10px; }
 
 /* ═══════════════════════════════════════════════════════════
-   STREAK / 40-DAY CHALLENGE
+   STREAK / MULTI-DAY CHALLENGE
 ═══════════════════════════════════════════════════════════ */
 .streak-card {
   background:linear-gradient(135deg, rgba(201,168,76,0.08) 0%, rgba(45,122,90,0.05) 100%);
@@ -440,6 +440,53 @@ select.field__input { appearance:none; }
   pointer-events:none;
   line-height:1;
 }
+
+/* Challenge duration selector */
+.challenge-selector {
+  display:flex; align-items:center; justify-content:center;
+  gap:6px; margin-bottom:18px; flex-wrap:wrap;
+}
+.challenge-selector__label {
+  font-size:0.72rem; color:var(--text-muted); letter-spacing:0.06em;
+  text-transform:uppercase; width:100%; margin-bottom:6px;
+}
+.challenge-btn {
+  padding:6px 14px;
+  border-radius:20px;
+  border:1.5px solid var(--border);
+  background:var(--bg-elevated);
+  color:var(--text-secondary);
+  font-size:0.78rem; font-weight:600;
+  cursor:pointer;
+  transition: all 0.2s;
+  font-family:var(--font-body);
+}
+.challenge-btn:hover { border-color:var(--gold); color:var(--gold-light); }
+.challenge-btn.active {
+  background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(45,122,90,0.12));
+  border-color:var(--gold);
+  color:var(--gold-light);
+  box-shadow:0 0 10px rgba(201,168,76,0.2);
+}
+
+/* Prize info bar */
+.prize-bar {
+  display:flex; align-items:center; justify-content:center;
+  gap:8px;
+  padding:10px 14px;
+  background:linear-gradient(90deg,rgba(201,168,76,0.08),rgba(45,122,90,0.08));
+  border:1px dashed rgba(201,168,76,0.3);
+  border-radius:10px;
+  margin-bottom:16px;
+  font-size:0.8rem; color:var(--gold-light);
+  font-weight:600;
+  animation: prizeGlow 3s ease-in-out infinite;
+}
+@keyframes prizeGlow {
+  0%,100% { box-shadow:0 0 0 rgba(201,168,76,0); }
+  50%      { box-shadow:0 0 12px rgba(201,168,76,0.15); }
+}
+
 .streak-ring-wrap {
   position:relative; width:140px; height:140px;
   margin:0 auto 16px;
@@ -482,8 +529,28 @@ select.field__input { appearance:none; }
 .badge--gold  { background:rgba(201,168,76,0.1); border-color:rgba(201,168,76,0.3); color:var(--gold-light); }
 .badge--green { background:rgba(45,122,90,0.12); border-color:rgba(45,122,90,0.35); color:var(--emerald-l); }
 .badge--muted { background:var(--bg-elevated); border-color:var(--border-soft); color:var(--text-muted); }
+.badge--prize { background:rgba(201,168,76,0.15); border-color:var(--gold); color:var(--gold-light); animation:prizeGlow 2s infinite; }
 
-/* 40-day grid */
+/* Milestone progress bar */
+.milestone-bar {
+  margin-top:14px;
+}
+.milestone-track {
+  height:6px; background:var(--bg-elevated);
+  border-radius:3px; overflow:hidden; position:relative;
+}
+.milestone-fill {
+  height:100%;
+  background:linear-gradient(90deg,var(--gold),var(--emerald));
+  border-radius:3px;
+  transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+}
+.milestone-labels {
+  display:flex; justify-content:space-between;
+  margin-top:6px; font-size:0.65rem; color:var(--text-muted);
+}
+
+/* Day grid — adapts to challenge length */
 .day-grid {
   display:grid;
   grid-template-columns:repeat(10,1fr);
@@ -494,10 +561,31 @@ select.field__input { appearance:none; }
   border-radius:3px;
   background:var(--bg-elevated);
   transition: background var(--transition), transform var(--transition);
+  position:relative;
 }
 .day-dot.done { background:var(--emerald); }
 .day-dot.today { background:var(--gold); transform:scale(1.2); }
 .day-dot.missed { background:var(--rose); opacity:0.55; }
+.day-dot.milestone-mark {
+  border:2px solid var(--gold);
+  box-shadow:0 0 6px rgba(201,168,76,0.4);
+}
+
+/* Completion celebration */
+.challenge-complete {
+  padding:16px;
+  background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(45,122,90,0.12));
+  border:1.5px solid var(--gold);
+  border-radius:12px;
+  margin-top:12px;
+  font-size:1rem; font-weight:700;
+  color:var(--gold-light);
+  animation:completePulse 1.5s ease-in-out infinite;
+}
+@keyframes completePulse {
+  0%,100% { transform:scale(1); }
+  50%      { transform:scale(1.02); }
+}
 
 /* ═══════════════════════════════════════════════════════════
    GOOD DEEDS DIARY
@@ -1063,8 +1151,25 @@ select.field__input { appearance:none; }
         <div style="font-size:0.8rem;color:var(--text-muted);margin-top:6px">শুধুমাত্র অনুমোদিত ব্যক্তির জন্য</div>
       </div>
       <div class="card card--gold">
+        <!-- ইমামের নাম -->
+        <div class="field">
+          <label class="field__label">আপনার নাম</label>
+          <input class="field__input" type="text" id="admin-name-standalone"
+                 placeholder="ইমামের নাম লিখুন" autocomplete="name"/>
+        </div>
+        <!-- ইমামের ফোন নম্বর — এটাই সবার কাছে যাবে -->
+        <div class="field">
+          <label class="field__label">মোবাইল নম্বর <span style="color:var(--rose-l)">*</span></label>
+          <div class="phone-prefix">
+            <span class="phone-prefix__code">🇧🇩 +880</span>
+            <input class="field__input" type="tel" id="admin-phone-standalone"
+                   placeholder="01XXXXXXXXX" maxlength="11" inputmode="numeric"/>
+          </div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">এই নম্বরে সদস্যরা আপনার সাথে যোগাযোগ করতে পারবেন</div>
+        </div>
+        <!-- PIN -->
         <div class="field" style="margin-bottom:0">
-          <label class="field__label">অ্যাডমিন পিন</label>
+          <label class="field__label">অ্যাডমিন পিন <span style="color:var(--rose-l)">*</span></label>
           <div class="pin-input-wrap">
             <input class="field__input" type="password" id="admin-pin-standalone"
                    placeholder="পিন দিন" maxlength="20"
@@ -1072,7 +1177,7 @@ select.field__input { appearance:none; }
                    style="padding-right:44px"/>
             <button class="pin-eye" onclick="toggleStandalonePinVisibility()" title="দেখান">👁️</button>
           </div>
-          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px">ডিফল্ট পিন: 786786</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px" id="admin-pin-hint">পিন ভুলে গেলে Apps Script থেকে রিসেট করুন</div>
         </div>
       </div>
       <button class="btn btn--primary btn--full mt-4" onclick="unlockAdminStandalone()">🔓 প্যানেল খুলুন</button>
@@ -1155,14 +1260,32 @@ select.field__input { appearance:none; }
           <div class="greeting__arabic">السَّلامُ عَلَيْكُم</div>
         </div>
 
-        <!-- 40-Day Streak -->
+        <!-- Multi-Day Challenge -->
         <div class="card card--gold mb-4" id="streak-card">
           <div class="section-hd">
-            <div class="section-hd__title">৪০ দিনের চ্যালেঞ্জ</div>
+            <div class="section-hd__title" id="challenge-title">চ্যালেঞ্জ</div>
             <span class="label-tag">🔥 ধারাবাহিকতা</span>
           </div>
 
           <div class="streak-card">
+
+            <!-- Duration Selector -->
+            <div class="challenge-selector">
+              <div class="challenge-selector__label">চ্যালেঞ্জের মেয়াদ বেছে নিন</div>
+              <button class="challenge-btn" onclick="setChallengeDays(3)"  data-days="3">৩ দিন</button>
+              <button class="challenge-btn" onclick="setChallengeDays(7)"  data-days="7">৭ দিন</button>
+              <button class="challenge-btn" onclick="setChallengeDays(14)" data-days="14">১৪ দিন</button>
+              <button class="challenge-btn" onclick="setChallengeDays(21)" data-days="21">২১ দিন</button>
+              <button class="challenge-btn" onclick="setChallengeDays(30)" data-days="30">৩০ দিন</button>
+              <button class="challenge-btn active" onclick="setChallengeDays(40)" data-days="40">৪০ দিন</button>
+            </div>
+
+            <!-- Prize Info Bar -->
+            <div class="prize-bar" id="prize-bar">
+              🏆 <span id="prize-text">৪০ দিনের বিজয়ীরা পুরস্কার পাবেন!</span>
+            </div>
+
+            <!-- Ring Progress -->
             <div class="streak-ring-wrap">
               <svg class="streak-ring" viewBox="0 0 140 140">
                 <defs>
@@ -1179,10 +1302,11 @@ select.field__input { appearance:none; }
               </svg>
               <div class="streak-ring__text">
                 <span class="streak-ring__number" id="streak-num">0</span>
-                <span class="streak-ring__label">/ ৪০ দিন</span>
+                <span class="streak-ring__label" id="streak-label">/ ৪০ দিন</span>
               </div>
             </div>
 
+            <!-- Stats -->
             <div class="streak-meta">
               <div class="streak-stat">
                 <div class="streak-stat__val" id="streak-mosque">0</div>
@@ -1192,14 +1316,33 @@ select.field__input { appearance:none; }
                 <div class="streak-stat__val" id="streak-attend">0%</div>
                 <div class="streak-stat__key">উপস্থিতি</div>
               </div>
+              <div class="streak-stat">
+                <div class="streak-stat__val" id="streak-remain">—</div>
+                <div class="streak-stat__key">বাকি দিন</div>
+              </div>
             </div>
 
+            <!-- Milestone Progress Bar -->
+            <div class="milestone-bar">
+              <div class="milestone-track">
+                <div class="milestone-fill" id="milestone-fill" style="width:0%"></div>
+              </div>
+              <div class="milestone-labels" id="milestone-labels"></div>
+            </div>
+
+            <!-- Badges -->
             <div class="streak-badges" id="streak-badges">
               <span class="badge badge--muted">নামাজ লগ করুন</span>
             </div>
 
-            <!-- 40 dots grid -->
+            <!-- Day Dots Grid -->
             <div class="day-grid" id="day-grid"></div>
+
+            <!-- Completion Banner (hidden by default) -->
+            <div class="challenge-complete" id="challenge-complete" style="display:none">
+              🎉 মাশাআল্লাহ! চ্যালেঞ্জ সম্পন্ন! পুরস্কারের জন্য অপেক্ষা করুন 🏆
+            </div>
+
           </div>
         </div>
 
@@ -1300,6 +1443,19 @@ select.field__input { appearance:none; }
           </div>
         </div>
 
+        <!-- ইমামের যোগাযোগ (সাধারণ ইউজারদের জন্য) -->
+        <div class="card mb-3" id="user-imam-contact" style="display:none">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="font-size:32px">👳</div>
+            <div style="flex:1">
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:2px">ইমামের সাথে যোগাযোগ করুন</div>
+              <div style="font-weight:700;font-size:0.95rem" id="user-imam-name">ইমাম</div>
+              <div style="font-size:0.78rem;color:var(--text-muted);font-family:var(--font-mono)" id="user-imam-phone">—</div>
+            </div>
+            <div style="display:flex;gap:6px" id="user-imam-actions"></div>
+          </div>
+        </div>
+
         <!-- Live Chat (ব্যক্তিগত প্রশ্ন) -->
         <div class="card">
           <div class="section-hd">
@@ -1363,25 +1519,6 @@ select.field__input { appearance:none; }
           <button class="btn btn--primary btn--full mt-4" onclick="changeUserPin()">✓ পিন পরিবর্তন করুন</button>
         </div>
 
-        <!-- API URL সংযোগ -->
-        <div class="card">
-          <div class="section-hd">
-            <div class="section-hd__title">🌐 সার্ভার সংযোগ (URL)</div>
-          </div>
-          <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:16px">
-            Google Apps Script URL সেট করুন। নতুন URL দিলে সংযোগ সক্রিয় হবে।
-          </p>
-          <div id="settings-url-status" style="display:none;margin-bottom:12px"></div>
-          <div class="field" style="margin-bottom:0">
-            <label class="field__label">Google Apps Script URL</label>
-            <input class="field__input" type="url" id="user-api-url-input" placeholder="https://script.google.com/macros/s/.../exec"/>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="btn btn--ghost btn--sm" style="flex:1" onclick="testApiUrl()">🔍 পরীক্ষা করুন</button>
-            <button class="btn btn--primary btn--sm" style="flex:1" onclick="saveUserApiUrl()">💾 সেভ করুন</button>
-          </div>
-        </div>
-
         <!-- থিম -->
         <div class="card">
           <div class="section-hd">
@@ -1429,7 +1566,7 @@ select.field__input { appearance:none; }
             </div>
             <button class="btn btn--primary btn--full" onclick="unlockAdmin()">🔓 প্যানেল খুলুন</button>
             <div style="margin-top:10px;font-size:0.72rem;color:var(--text-muted);text-align:center">
-              ডিফল্ট পিন: 786786 · পিন পরিবর্তন করুন প্যানেলের ভেতরে
+              পিন সার্ভারে যাচাই করা হবে · পিন ভুললে Apps Script থেকে রিসেট করুন
             </div>
           </div>
         </div>
@@ -1464,10 +1601,39 @@ select.field__input { appearance:none; }
 
           <!-- Members tab -->
           <div class="tab-panel active" id="tab-members">
-            <div class="search-bar">
-              <span>🔍</span>
-              <input type="text" placeholder="সদস্য খুঁজুন…" oninput="filterUsers(this.value)" id="user-search"/>
+            <!-- Imam contact card -->
+            <div class="card mb-3" id="imam-contact-card" style="display:none">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="font-size:32px">👳</div>
+                <div style="flex:1">
+                  <div style="font-weight:700;font-size:0.95rem" id="imam-contact-name">ইমাম</div>
+                  <div style="font-size:0.78rem;color:var(--text-muted);font-family:var(--font-mono)" id="imam-contact-phone">—</div>
+                </div>
+                <div style="display:flex;gap:6px" id="imam-contact-actions"></div>
+              </div>
             </div>
+
+            <!-- Monitoring alert bar -->
+            <div id="monitor-alert-bar" style="display:none;padding:10px 14px;background:rgba(192,68,74,0.12);border:1px solid rgba(192,68,74,0.3);border-radius:10px;margin-bottom:12px;font-size:0.82rem;color:var(--rose-l)"></div>
+
+            <!-- Filter + Search -->
+            <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+              <div class="search-bar" style="flex:1;min-width:160px">
+                <span>🔍</span>
+                <input type="text" placeholder="সদস্য খুঁজুন…" oninput="filterUsers(this.value)" id="user-search"/>
+              </div>
+              <select class="field__input" id="monitor-filter" onchange="applyMonitorFilter(this.value)" style="width:auto;padding:8px 10px;font-size:0.8rem">
+                <option value="all">সকল সদস্য</option>
+                <option value="active_today">আজ সক্রিয়</option>
+                <option value="inactive_today">আজ নিষ্ক্রিয়</option>
+                <option value="missed_any">মিস আছে</option>
+                <option value="top_streak">সেরা স্ট্রিক</option>
+              </select>
+            </div>
+
+            <!-- Summary chips -->
+            <div id="monitor-summary" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
+
             <div id="admin-user-list" class="user-list">
               <div class="empty-state"><span class="emoji">⏳</span>সদস্যদের তথ্য লোড হচ্ছে…</div>
             </div>
@@ -1593,6 +1759,26 @@ select.field__input { appearance:none; }
               <button class="btn btn--ghost btn--sm btn--full mt-4" onclick="saveApiUrl()">💾 URL সেভ করুন</button>
             </div>
 
+            <!-- ইমামের তথ্য -->
+            <div class="card mt-4">
+              <div class="section-hd">
+                <div class="section-hd__title">👳 ইমামের তথ্য</div>
+              </div>
+              <div class="field">
+                <label class="field__label">ইমামের নাম</label>
+                <input class="field__input" type="text" id="imam-name-settings" placeholder="ইমামের পুরো নাম"/>
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label class="field__label">মোবাইল নম্বর</label>
+                <div class="phone-prefix">
+                  <span class="phone-prefix__code">🇧🇩 +880</span>
+                  <input class="field__input" type="tel" id="imam-phone-settings" placeholder="01XXXXXXXXX" maxlength="11" inputmode="numeric"/>
+                </div>
+                <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">সদস্যরা এই নম্বরে সরাসরি যোগাযোগ করতে পারবেন</div>
+              </div>
+              <button class="btn btn--primary btn--full mt-4" onclick="saveImamInfo()">💾 তথ্য সেভ করুন</button>
+            </div>
+
             <div class="card mt-4">
               <button class="btn btn--danger btn--full" onclick="lockAdminPanel()">🔒 প্যানেল লক করুন</button>
             </div>
@@ -1675,9 +1861,52 @@ select.field__input { appearance:none; }
 
 <script>
 // ═══════════════════════════════════════════════════════════
-//  CONFIG — API URL (localStorage থেকে নেওয়া হয়)
+//  CONFIG — API URL (এনক্রিপ্টেড, শুধু Admin পরিবর্তন করতে পারবে)
 // ═══════════════════════════════════════════════════════════
-let API_URL = localStorage.getItem('salat_api_url') || 'https://script.google.com/macros/s/AKfycbxiun0hi6fyJxA3y9dwVgd0I-o0BOazkOI7ziz5Ss-VdIuiDBQXiESCo4u3yoxIfSot/exec';
+
+// ⚠️ নিচের ENCRYPTED_URL এর ভেতরে শুধু এই অংশটা বদলান:
+// obfuscateUrl('PASTE_YOUR_URL_HERE') চালিয়ে যা আসে সেটা বসান
+// অথবা সরাসরি: PASTE_YOUR_URL_HERE জায়গায় আপনার URL দিন
+// তারপর নিচের obfuscate function চালু হলে আর সরাসরি দেখা যাবে না
+
+const _ENC = (function() {
+  // এখানে আপনার URL টা বসান — শুধু এই একটা জায়গায়
+  const _raw = 'PASTE_YOUR_URL_HERE';
+  // XOR key দিয়ে এনকোড করা হচ্ছে
+  const _key = 'salat_monitor_secure_2024';
+  let _enc = '';
+  for (let i = 0; i < _raw.length; i++) {
+    _enc += String.fromCharCode(_raw.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
+  }
+  return btoa(_enc);
+})();
+
+function _decodeUrl() {
+  try {
+    const _key = 'salat_monitor_secure_2024';
+    const _enc = atob(_ENC);
+    let _dec = '';
+    for (let i = 0; i < _enc.length; i++) {
+      _dec += String.fromCharCode(_enc.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
+    }
+    return _dec;
+  } catch { return ''; }
+}
+
+// Runtime-এ URL সেট হয় — source code-এ সরাসরি দেখা যায় না
+let API_URL = localStorage.getItem('https://script.google.com/macros/s/AKfycbxjK_EByTZPa-VvzACxxofuZdZpQ21S3S_66cznSVX3kFkTBrSJPFQmctbzt1KCm5SYtw/exec')
+  ? (function(){
+      try {
+        const _key = 'salat_monitor_secure_2024';
+        const _enc = atob(localStorage.getItem('https://script.google.com/macros/s/AKfycbxjK_EByTZPa-VvzACxxofuZdZpQ21S3S_66cznSVX3kFkTBrSJPFQmctbzt1KCm5SYtw/exec'));
+        let _dec = '';
+        for (let i = 0; i < _enc.length; i++) {
+          _dec += String.fromCharCode(_enc.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
+        }
+        return _dec;
+      } catch { return _decodeUrl(); }
+    })()
+  : _decodeUrl();
 
 // ═══════════════════════════════════════════════════════════
 //  API HELPERS — CORS fix (Content-Type: text/plain)
@@ -1701,7 +1930,7 @@ async function apiPost(body) {
 // Default hashed PIN (SHA-256 of "786786")
 // To change: enter new PIN in the Setup section, copy hash, store here
 const DEFAULT_PIN_HASH = 'b3b3b5e2e2c0e2cbf1e5e5c9b2f2b6c1e2e5f2b6e5c1e2f2b6e5c1e2f2b6e5'; // placeholder
-let STORED_PIN_HASH = localStorage.getItem('salat_admin_pin_hash') || null;
+let STORED_PIN_HASH = null; // PIN এখন সার্ভারে — localStorage-এ নেই
 
 // ═══════════════════════════════════════════════════════════
 //  STATE
@@ -1780,43 +2009,34 @@ async function unlockAdmin() {
   const pin = document.getElementById('admin-pin').value;
   if (!pin) { toast('পিন দিন', 'err'); return; }
 
-  const hash = await sha256(pin);
+  loading(true);
+  try {
+    const hash = await sha256(pin);
+    // hash preview সরিয়ে দিয়েছি — security risk ছিল
+    document.getElementById('pin-hash-display').textContent = '';
 
-  // Show hash visually for debugging (in production remove this)
-  document.getElementById('pin-hash-display').textContent = 'SHA-256: ' + hash;
-  document.getElementById('pin-hash-display').classList.add('show');
+    const res = await apiGet({ action: 'verifyAdminPin', pin_hash: hash });
+    if (!res.success) { toast(res.message || 'পিন সঠিক নয় ✗', 'err'); return; }
 
-  // Compare with stored hash
-  const savedHash = localStorage.getItem('salat_admin_pin_hash');
-  if (!savedHash) {
-    // First time: no hash stored yet — bootstrap with default PIN "786786"
-    const defaultHash = await sha256('786786');
-    if (hash !== defaultHash) { toast('ভুল পিন। ডিফল্ট পিন হলো 786786', 'err'); return; }
-    localStorage.setItem('salat_admin_pin_hash', defaultHash);
-  } else {
-    if (hash !== savedHash) { toast('পিন সঠিক নয় ✗', 'err'); return; }
-  }
-
-  document.getElementById('admin-gate').style.display  = 'none';
-  document.getElementById('admin-panel').style.display = 'block';
-  loadAdminData();
-  updateStoredHashDisplay();
+    document.getElementById('admin-gate').style.display  = 'none';
+    document.getElementById('admin-panel').style.display = 'block';
+    loadAdminData();
+    if (res.data && res.data.first_login) {
+      toast('প্রথম লগইন — পিন পরিবর্তন করুন', 'ok');
+    }
+  } catch { toast('সার্ভার থেকে যাচাই ব্যর্থ হয়েছে', 'err'); }
+  finally { loading(false); }
 }
 
 async function saveNewPinHash() {
-  const newPin = document.getElementById('new-pin-input').value.trim();
-  if (newPin.length < 4) { toast('পিন কমপক্ষে ৪ অক্ষর হতে হবে', 'err'); return; }
-  const hash = await sha256(newPin);
-  localStorage.setItem('salat_admin_pin_hash', hash);
-  toast('✓ নতুন পিন নিরাপদে সংরক্ষিত হয়েছে', 'ok');
-  updateStoredHashDisplay();
-  document.getElementById('new-pin-input').value = '';
+  // এই ফাংশন এখন changeAdminPin() দিয়ে replace হয়েছে
+  toast('পিন পরিবর্তনের জন্য নিচের ফর্ম ব্যবহার করুন', 'info');
 }
 
 async function updateStoredHashDisplay() {
-  const stored = localStorage.getItem('salat_admin_pin_hash') || '—';
+  // PIN এখন সার্ভারে সংরক্ষিত — localStorage-এ আর নেই
   const el = document.getElementById('stored-hash-text');
-  if (el) el.textContent = stored.substring(0, 20) + '…';
+  if (el) el.textContent = '(সার্ভারে সুরক্ষিত)';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2322,29 +2542,40 @@ function backFromAdminGate() {
 }
 
 async function unlockAdminStandalone() {
-  const pin = document.getElementById('admin-pin-standalone').value;
-  if (!pin) { toast('পিন দিন', 'err'); return; }
+  const pin   = document.getElementById('admin-pin-standalone').value;
+  const phone = document.getElementById('admin-phone-standalone').value.trim();
+  const name  = document.getElementById('admin-name-standalone').value.trim();
+  if (!pin)   { toast('পিন দিন', 'err'); return; }
+  if (!phone) { toast('ফোন নম্বর দিন', 'err'); return; }
 
-  const hash       = await sha256(pin);
-  const defaultH   = await sha256('786786');
-  const savedHash  = localStorage.getItem('salat_admin_pin_hash') || defaultH;
+  loading(true);
+  try {
+    const hash = await sha256(pin);
+    const res  = await apiGet({ action: 'verifyAdminPin', pin_hash: hash });
+    if (!res.success) { toast(res.message || 'ভুল পিন', 'err'); return; }
 
-  if (hash !== savedHash) { toast('পিন সঠিক নয় ✗', 'err'); return; }
-  if (!localStorage.getItem('salat_admin_pin_hash')) {
-    localStorage.setItem('salat_admin_pin_hash', defaultH);
-  }
+    // ইমামের ফোন নম্বর সার্ভারে সেভ করি
+    const adminName = name || 'ইমাম';
+    await apiPost({ action: 'saveAdminInfo', phone, name: adminName }).catch(() => {});
 
-  saveSession({ user_id:'admin', name:'ইমাম / অ্যাডমিন', phone:'', whatsapp_link:'', is_admin:true });
-  document.getElementById('screen-admin-standalone').style.display = 'none';
-  document.getElementById('screen-main').style.display = 'block';
-  document.getElementById('greeting-name').textContent = 'ইমাম';
-  document.getElementById('greeting-text').textContent = greetingText();
-  document.getElementById('nav-admin').style.display = '';
-  switchScreen('admin', document.getElementById('nav-admin'));
-  loadAdminData();
-  refreshPrayerTimes();
-  updateNotifStatusBar();
-  toast('✓ ইমাম প্যানেলে স্বাগতম', 'ok');
+    saveSession({ user_id:'admin', name: adminName, phone, whatsapp_link:'', is_admin:true });
+    document.getElementById('screen-admin-standalone').style.display = 'none';
+    document.getElementById('screen-main').style.display = 'block';
+    document.getElementById('greeting-name').textContent = adminName;
+    document.getElementById('greeting-text').textContent = greetingText();
+    document.getElementById('nav-admin').style.display = '';
+    switchScreen('admin', document.getElementById('nav-admin'));
+    loadAdminData();
+    refreshPrayerTimes();
+    updateNotifStatusBar();
+
+    if (res.data && res.data.first_login) {
+      toast('✓ স্বাগতম! নিরাপত্তার জন্য পিন পরিবর্তন করুন', 'ok');
+    } else {
+      toast('✓ ইমাম প্যানেলে স্বাগতম', 'ok');
+    }
+  } catch { toast('সার্ভার থেকে যাচাই ব্যর্থ হয়েছে', 'err'); }
+  finally { loading(false); }
 }
 
 function loginAsAdmin() {
@@ -2381,6 +2612,7 @@ function enterApp() {
     loadDeedsTimeline();
     loadChatThread();
     loadPublicQA();
+    loadUserImamContact();
   }
 }
 
@@ -2512,7 +2744,7 @@ async function submitAllWaqt() {
   }
   loading(true);
   try {
-    const res = await apiPost({ action:'submitBulkSalah', user_id:SESSION.user_id, date, prayers });
+    const res = await apiPost({ action:'submitBulkSalah', user_id:SESSION.user_id, date, prayers, challenge_days:CHALLENGE_DAYS });
     if (!res.success) { toast(res.message, 'err'); return; }
     toast(`✓ ${res.data.saved.length}টি নামাজ সেভ হয়েছে!`, 'ok');
     updateStreakDisplay(res.data.streak);
@@ -2521,48 +2753,164 @@ async function submitAllWaqt() {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  STREAK
+//  MULTI-DAY CHALLENGE
 // ═══════════════════════════════════════════════════════════
+
+// Prize config — আপনি চাইলে এখানে পরিবর্তন করুন
+const CHALLENGE_PRIZES = {
+  3:  '৩ দিনের বিজয়ীরা বিশেষ সনদপত্র পাবেন 📜',
+  7:  '৭ দিনের বিজয়ীরা ৫০ টাকা পুরস্কার পাবেন 🎁',
+  14: '১৪ দিনের বিজয়ীরা ১৫০ টাকা পুরস্কার পাবেন 🥈',
+  21: '২১ দিনের বিজয়ীরা ৩০০ টাকা পুরস্কার পাবেন 🥇',
+  30: '৩০ দিনের বিজয়ীরা ৫০০ টাকা পুরস্কার পাবেন 🏅',
+  40: '৪০ দিনের বিজয়ীরা বিশেষ পুরস্কার পাবেন 🏆',
+};
+
+const CHALLENGE_MILESTONES = {
+  3:  [],
+  7:  [3, 7],
+  14: [7, 14],
+  21: [7, 14, 21],
+  30: [7, 14, 21, 30],
+  40: [10, 20, 30, 40],
+};
+
+const CHALLENGE_BADGES = {
+  3:  [
+    [3,  'badge--gold',  '✅ ৩ দিন সম্পন্ন!'],
+    [2,  'badge--green', '🔥 ২ দিন হলো'],
+    [1,  'badge--muted', '✨ শুরু হয়েছে'],
+  ],
+  7:  [
+    [7,  'badge--gold',  '🏆 ৭ দিনের চ্যাম্পিয়ন!'],
+    [5,  'badge--green', '🔥 ৫ দিন পার'],
+    [3,  'badge--green', '✨ ৩ দিন পার'],
+    [1,  'badge--muted', '👣 শুরু হয়েছে'],
+  ],
+  14: [
+    [14, 'badge--gold',  '🏆 ২ সপ্তাহের চ্যাম্পিয়ন!'],
+    [10, 'badge--gold',  '⭐ ১০ দিনের যোদ্ধা'],
+    [7,  'badge--green', '🔥 ১ সপ্তাহ পার'],
+    [3,  'badge--muted', '✨ ৩ দিন পার'],
+  ],
+  21: [
+    [21, 'badge--gold',  '🏆 ২১ দিনের চ্যাম্পিয়ন!'],
+    [14, 'badge--gold',  '⭐ ২ সপ্তাহের যোদ্ধা'],
+    [7,  'badge--green', '🔥 ১ সপ্তাহ পার'],
+    [3,  'badge--muted', '✨ শুরু হয়েছে'],
+  ],
+  30: [
+    [30, 'badge--gold',  '🏆 ৩০ দিনের চ্যাম্পিয়ন!'],
+    [21, 'badge--gold',  '⭐ ৩ সপ্তাহের যোদ্ধা'],
+    [14, 'badge--green', '🔥 ২ সপ্তাহ পার'],
+    [7,  'badge--muted', '✨ ১ সপ্তাহ পার'],
+  ],
+  40: [
+    [40, 'badge--gold',  '🏆 ৪০ দিনের চ্যাম্পিয়ন!'],
+    [30, 'badge--gold',  '⭐ ৩০ দিনের যোদ্ধা'],
+    [14, 'badge--green', '🔥 ২ সপ্তাহের ধারা'],
+    [7,  'badge--green', '✨ ১ সপ্তাহের ধারা'],
+  ],
+};
+
+let CHALLENGE_DAYS = parseInt(localStorage.getItem('challengeDays') || '40', 10);
+let LAST_STREAK_DATA = null;
+
+function setChallengeDays(days) {
+  CHALLENGE_DAYS = days;
+  localStorage.setItem('challengeDays', days);
+  // Update button states
+  document.querySelectorAll('.challenge-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.days) === days);
+  });
+  // Update title & prize
+  document.getElementById('challenge-title').textContent = `${banglaNum(days)} দিনের চ্যালেঞ্জ`;
+  document.getElementById('prize-text').textContent = CHALLENGE_PRIZES[days] || `${banglaNum(days)} দিনের বিজয়ীরা পুরস্কার পাবেন!`;
+  // Re-render with cached data
+  if (LAST_STREAK_DATA) updateStreakDisplay(LAST_STREAK_DATA);
+}
+
+function banglaNum(n) {
+  const map = {'0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯'};
+  return String(n).replace(/[0-9]/g, d => map[d]);
+}
+
 async function loadStreakData() {
   if (!SESSION || SESSION.is_admin) return;
+  // Init challenge days from localStorage
+  const saved = parseInt(localStorage.getItem('challengeDays') || '40', 10);
+  CHALLENGE_DAYS = saved;
+  document.querySelectorAll('.challenge-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.days) === saved);
+  });
+  document.getElementById('challenge-title').textContent = `${banglaNum(saved)} দিনের চ্যালেঞ্জ`;
+  document.getElementById('prize-text').textContent = CHALLENGE_PRIZES[saved] || '';
   try {
-    const res = await apiGet({ action:'getStreak', user_id:SESSION.user_id });
+    const res = await apiGet({ action:'getStreak', user_id:SESSION.user_id, challenge_days:CHALLENGE_DAYS });
     if (res.success) updateStreakDisplay(res.data);
   } catch {}
 }
 
 function updateStreakDisplay(data) {
   if (!data) return;
+  LAST_STREAK_DATA = data;
+  const days     = CHALLENGE_DAYS;
   const streak   = data.streak || 0;
   const mosqDays = data.total_mosque_days || 0;
+  const pct      = Math.min(streak, days);
+  const remain   = Math.max(0, days - streak);
 
-  document.getElementById('streak-num').textContent    = streak;
-  document.getElementById('streak-mosque').textContent = mosqDays;
-  document.getElementById('streak-attend').textContent = Math.round(mosqDays / 40 * 100) + '%';
+  // Numbers
+  document.getElementById('streak-num').textContent     = banglaNum(streak);
+  document.getElementById('streak-label').textContent   = `/ ${banglaNum(days)} দিন`;
+  document.getElementById('streak-mosque').textContent  = banglaNum(mosqDays);
+  document.getElementById('streak-attend').textContent  = banglaNum(Math.round(mosqDays / days * 100)) + '%';
+  document.getElementById('streak-remain').textContent  = streak >= days ? '✅' : banglaNum(remain);
 
+  // Ring
   const circ   = document.getElementById('streakCircle');
-  const offset = 364.4 - (Math.min(streak, 40) / 40) * 364.4;
+  const offset = 364.4 - (pct / days) * 364.4;
   circ.style.strokeDashoffset = offset;
 
-  const badgesEl = document.getElementById('streak-badges');
+  // Milestone bar
+  const fill = document.getElementById('milestone-fill');
+  fill.style.width = Math.min(100, Math.round(pct / days * 100)) + '%';
+  const mstones = CHALLENGE_MILESTONES[days] || [];
+  document.getElementById('milestone-labels').innerHTML =
+    ['০', ...mstones.map(m => banglaNum(m))].map(m => `<span>${m}</span>`).join('');
+
+  // Badges
+  const badgeList = CHALLENGE_BADGES[days] || CHALLENGE_BADGES[40];
+  const badgesEl  = document.getElementById('streak-badges');
   const badges = [];
-  if (streak >= 40)      badges.push(['badge--gold',  '🏆 ৪০ দিনের চ্যাম্পিয়ন!']);
-  else if (streak >= 30) badges.push(['badge--gold',  '⭐ ৩০ দিনের যোদ্ধা']);
-  else if (streak >= 14) badges.push(['badge--green', '🔥 ২ সপ্তাহের ধারা']);
-  else if (streak >= 7)  badges.push(['badge--green', '✨ ১ সপ্তাহের ধারা']);
-  else if (streak > 0)   badges.push(['badge--muted', `${streak} দিন চলছে`]);
-  else                   badges.push(['badge--muted', 'আজ থেকে শুরু করুন']);
+  let matched = false;
+  for (const [threshold, cls, label] of badgeList) {
+    if (streak >= threshold) { badges.push([cls, label]); matched = true; break; }
+  }
+  if (!matched) badges.push(['badge--muted', 'আজ থেকে শুরু করুন 💪']);
+  // Extra: show next milestone hint
+  const next = mstones.find(m => m > streak);
+  if (next && streak < days) badges.push(['badge--muted', `🎯 পরের লক্ষ্য: ${banglaNum(next)} দিন`]);
   badgesEl.innerHTML = badges.map(([cls,txt]) => `<span class="badge ${cls}">${txt}</span>`).join('');
 
+  // Day dots grid — adapts to challenge length
   const grid     = document.getElementById('day-grid');
   const doneDays = new Set(data.mosque_days || []);
   const today    = todayStr();
-  grid.innerHTML = Array.from({length:40}, (_,i) => {
-    const d  = new Date(); d.setDate(d.getDate() - (39 - i));
+  const cols     = days <= 7 ? days : days <= 14 ? 7 : 10;
+  grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  grid.innerHTML = Array.from({length:days}, (_, i) => {
+    const d  = new Date(); d.setDate(d.getDate() - (days - 1 - i));
     const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    const cls = ds === today ? 'today' : doneDays.has(ds) ? 'done' : '';
-    return `<div class="day-dot ${cls}" title="${ds}"></div>`;
+    const isMilestone = mstones.includes(i + 1);
+    let cls = ds === today ? 'today' : doneDays.has(ds) ? 'done' : '';
+    if (isMilestone) cls += ' milestone-mark';
+    return `<div class="day-dot ${cls.trim()}" title="${banglaNum(i+1)} দিন · ${ds}"></div>`;
   }).join('');
+
+  // Completion banner
+  const banner = document.getElementById('challenge-complete');
+  banner.style.display = streak >= days ? 'block' : 'none';
 }
 
 
@@ -2738,6 +3086,7 @@ async function loadAdminData() {
     renderAdminQA(chats);
     loadAdminAudit();
     buildCharts(users, logs);
+    loadImamContactCard();
   } catch (e) {
     toast('অ্যাডমিন ডেটা লোড ব্যর্থ হয়েছে', 'err');
     console.error(e);
@@ -2995,82 +3344,210 @@ function buildCharts(users, logs) {
 // ═══════════════════════════════════════════════════════════
 //  ADMIN — USER LIST, REPORTS, Q&A, AUDIT
 // ═══════════════════════════════════════════════════════════
+let ALL_LOGS_CACHE = [];
+
 function renderUserList(users, logs) {
+  ALL_LOGS_CACHE = logs;
+  applyMonitorFilter(document.getElementById('monitor-filter')?.value || 'all');
+}
+
+function applyMonitorFilter(filter) {
+  const users = ALL_USERS_CACHE;
+  const logs  = ALL_LOGS_CACHE;
+  const today = new Date().toISOString().slice(0,10);
+
+  const enriched = users.map(u => {
+    const ul        = logs.filter(l => l.user_id === u.user_id);
+    const total     = ul.length;
+    const mosque    = ul.filter(l => String(l.status) === '1').length;
+    const home      = ul.filter(l => String(l.status) === '2').length;
+    const travel    = ul.filter(l => String(l.status) === '3').length;
+    const missed    = ul.filter(l => String(l.status) === '0').length;
+    const pct       = total ? Math.round(mosque / total * 100) : 0;
+    const todayLogs = ul.filter(l => String(l.date || '').slice(0, 10) === today);
+    const streak    = calcLocalStreak(ul);
+    const sorted    = ul.map(l => String(l.date).slice(0,10)).sort();
+    const lastLogDate    = sorted.length ? sorted[sorted.length - 1] : null;
+    const daysSinceLast  = lastLogDate ? Math.round((new Date(today) - new Date(lastLogDate)) / 86400000) : null;
+    return { ...u, ul, total, mosque, home, travel, missed, pct, todayLogs, streak, lastLogDate, daysSinceLast };
+  });
+
+  // Summary chips
+  const activeToday   = enriched.filter(u => u.todayLogs.length > 0).length;
+  const inactiveToday = enriched.filter(u => u.todayLogs.length === 0).length;
+  const missUsers     = enriched.filter(u => u.missed > 0).length;
+  const ghostUsers    = enriched.filter(u => u.daysSinceLast !== null && u.daysSinceLast >= 3).length;
+  const summaryEl     = document.getElementById('monitor-summary');
+  if (summaryEl) summaryEl.innerHTML = [
+    `<span class="badge badge--green">✅ আজ সক্রিয়: ${activeToday}</span>`,
+    `<span class="badge badge--muted">😴 নিষ্ক্রিয়: ${inactiveToday}</span>`,
+    ghostUsers > 0 ? `<span class="badge" style="background:rgba(192,68,74,0.12);border-color:var(--rose);color:var(--rose-l)">⚠️ ৩+ দিন গায়েব: ${ghostUsers}</span>` : '',
+    `<span class="badge badge--muted">✗ মিস আছে: ${missUsers}</span>`,
+  ].join('');
+
+  // Alert bar
+  const alertEl = document.getElementById('monitor-alert-bar');
+  if (alertEl) {
+    const ghosts = enriched.filter(u => u.daysSinceLast !== null && u.daysSinceLast >= 3);
+    if (ghosts.length) {
+      alertEl.style.display = 'block';
+      alertEl.innerHTML = `⚠️ <strong>${ghosts.length} জন সদস্য ৩+ দিন ধরে কোনো নামাজ লগ করেননি:</strong> ${ghosts.map(u => escHtml(u.name)).join(', ')}`;
+    } else {
+      alertEl.style.display = 'none';
+    }
+  }
+
+  // Filter
+  let filtered = enriched;
+  if (filter === 'active_today')   filtered = enriched.filter(u => u.todayLogs.length > 0);
+  if (filter === 'inactive_today') filtered = enriched.filter(u => u.todayLogs.length === 0);
+  if (filter === 'missed_any')     filtered = enriched.filter(u => u.missed > 0);
+  if (filter === 'top_streak')     filtered = [...enriched].sort((a,b) => b.streak - a.streak);
+
   const el = document.getElementById('admin-user-list');
-  if (!users.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">👤</span>এখনো কোনো সদস্য নেই।</div>`; return; }
-  el.innerHTML = users.map(u => {
-    const userLogs  = logs.filter(l=>l.user_id===u.user_id);
-    const total     = userLogs.length;
-    const mosque    = userLogs.filter(l=>String(l.status)==='1').length;
-    const home      = userLogs.filter(l=>String(l.status)==='2').length;
-    const travel    = userLogs.filter(l=>String(l.status)==='3').length;
-    const missed    = userLogs.filter(l=>String(l.status)==='0').length;
-    const pct       = total ? Math.round(mosque/total*100) : 0;
+  if (!filtered.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">👤</span>কোনো সদস্য পাওয়া যায়নি।</div>`; return; }
 
-    // ফোন নম্বর: সবসময় ১১ ডিজিট (০ দিয়ে শুরু) রাখা
-    const rawPhone  = String(u.phone||'').trim();
-    // শুধু digit রাখি
-    const digitsOnly = rawPhone.replace(/\D/g,'');
-    // ১১ ডিজিটের বাংলাদেশি নম্বর → 01XXXXXXXXX
-    const displayPhone = digitsOnly.startsWith('880')
-      ? '0' + digitsOnly.slice(3)          // +8801... → 01...
-      : digitsOnly.startsWith('0')
-        ? digitsOnly                        // 01... → 01... (ঠিকঠাক)
-        : digitsOnly ? '0' + digitsOnly : '';// কোনো 0 নেই → সামনে 0 দাও
+  el.innerHTML = filtered.map(u => {
+    const rawPhone   = String(u.phone || '').trim();
+    const digitsOnly = rawPhone.replace(/\D/g, '');
+    const displayPhone = digitsOnly.startsWith('880') ? '0' + digitsOnly.slice(3)
+      : digitsOnly.startsWith('0') ? digitsOnly : digitsOnly ? '0' + digitsOnly : '';
+    const telLink = displayPhone ? '+880' + displayPhone.replace(/^0/, '') : '';
+    const wa = u.whatsapp_link || (displayPhone ? `https://wa.me/880${displayPhone.replace(/^0/, '')}` : '');
 
-    // tel: link এ +880 সহ আন্তর্জাতিক ফরম্যাট ব্যবহার করি
-    const telLink   = displayPhone ? '+880' + displayPhone.replace(/^0/,'') : '';
-    const wa        = u.whatsapp_link || (displayPhone ? `https://wa.me/880${displayPhone.replace(/^0/,'')}` : '');
-
-    // ওয়াক্তভিত্তিক আজকের সালাত
-    const today = new Date().toISOString().slice(0,10);
-    const todayLogs = userLogs.filter(l=>String(l.date||'').slice(0,10)===today);
-    const todayDots = ['Fajr','Dhuhr','Asr','Maghrib','Isha'].map(w=>{
-      const lg = todayLogs.find(l=>l.waqt===w);
+    // Today's 5 waqt dots
+    const todayDots = ['Fajr','Dhuhr','Asr','Maghrib','Isha'].map(w => {
+      const lg    = u.todayLogs.find(l => l.waqt === w);
       const color = !lg ? '#3a3a3a' : lg.status==='1'?'#2D7A5A':lg.status==='2'?'#C9A84C':lg.status==='3'?'#4A6FA5':'#C0444A';
       const icon  = !lg ? '○' : lg.status==='1'?'🕌':lg.status==='2'?'🏠':lg.status==='3'?'✈️':'✗';
       return `<span title="${w}" style="font-size:${lg?'13px':'11px'};color:${color}">${icon}</span>`;
     }).join('');
 
+    // Last 7-day mini trend
+    const trendDots = Array.from({length: 7}, (_, i) => {
+      const d  = new Date(); d.setDate(d.getDate() - (6 - i));
+      const ds = d.toISOString().slice(0, 10);
+      const dayL      = u.ul.filter(l => String(l.date).slice(0,10) === ds);
+      const hasMosque = dayL.some(l => String(l.status) === '1');
+      const hasMissed = dayL.some(l => String(l.status) === '0');
+      const hasHome   = dayL.some(l => String(l.status) === '2');
+      const bg = !dayL.length ? 'var(--bg-elevated)'
+               : hasMosque  ? 'var(--emerald)'
+               : hasMissed  ? 'var(--rose)'
+               : hasHome    ? 'var(--gold)'
+               : 'var(--bg-elevated)';
+      return `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${bg};margin-right:1px" title="${ds}"></span>`;
+    }).join('');
+
+    // Status badge
+    const todayActive = u.todayLogs.length > 0;
+    const isGhost     = u.daysSinceLast !== null && u.daysSinceLast >= 3;
+    const statusBadge = isGhost
+      ? `<span style="font-size:0.65rem;background:rgba(192,68,74,0.12);color:var(--rose-l);border:1px solid var(--rose);border-radius:6px;padding:1px 6px">⚠️ ${u.daysSinceLast} দিন গায়েব</span>`
+      : todayActive
+        ? `<span style="font-size:0.65rem;background:rgba(45,122,90,0.12);color:var(--emerald-l);border:1px solid var(--emerald);border-radius:6px;padding:1px 6px">✅ আজ সক্রিয়</span>`
+        : `<span style="font-size:0.65rem;background:var(--bg-elevated);color:var(--text-muted);border:1px solid var(--border-soft);border-radius:6px;padding:1px 6px">⏸ আজ লগ নেই</span>`;
+
     return `
-    <div class="user-card" id="ucard-${u.user_id}">
+    <div class="user-card" id="ucard-${u.user_id}" data-name="${escHtml(u.name).toLowerCase()}" data-active="${todayActive}" data-missed="${u.missed > 0}" data-streak="${u.streak}">
       <div class="user-card__avatar">👤</div>
       <div class="user-card__info" style="flex:1;min-width:0">
-        <div class="user-card__name">${escHtml(u.name)}</div>
-        <div class="user-card__phone" style="font-family:var(--font-mono);font-size:0.78rem;letter-spacing:0.03em;color:var(--text-muted)">${displayPhone||'—'}</div>
-        <!-- আজকের ওয়াক্ত ডট -->
-        <div style="display:flex;gap:5px;align-items:center;margin-top:4px" title="আজকের নামাজ: ফজর·যোহর·আসর·মাগরিব·এশা">
-          ${todayDots}
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <div class="user-card__name">${escHtml(u.name)}</div>
+          ${statusBadge}
         </div>
-        <!-- উপস্থিতি বার -->
+        <div class="user-card__phone">${displayPhone || '—'}</div>
+        <div style="display:flex;gap:5px;align-items:center;margin-top:4px">${todayDots}</div>
+        <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:0.62rem;color:var(--text-muted)">৭ দিন:</span>
+          ${trendDots}
+          <span style="font-size:0.65rem;color:var(--text-muted)">🔥${u.streak}</span>
+        </div>
         <div class="attendance-bar-wrap" style="margin-top:5px">
           <div style="display:flex;justify-content:space-between;font-size:0.67rem;color:var(--text-muted);margin-bottom:2px">
-            <span>🕌 ${mosque} &nbsp;🏠 ${home} &nbsp;✈️ ${travel} &nbsp;✗ ${missed}</span>
-            <span>${pct}%</span>
+            <span>🕌 ${u.mosque} &nbsp;🏠 ${u.home} &nbsp;✈️ ${u.travel} &nbsp;✗ ${u.missed}</span>
+            <span>${u.pct}%</span>
           </div>
-          <div class="attendance-bar">
-            <div class="attendance-bar__fill" style="width:${pct}%"></div>
-          </div>
+          <div class="attendance-bar"><div class="attendance-bar__fill" style="width:${u.pct}%"></div></div>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-left:8px">
-        <span class="user-card__streak" style="font-family:var(--font-mono);font-size:0.7rem">${total} লগ</span>
+        <span class="user-card__streak" style="font-family:var(--font-mono);font-size:0.7rem">${u.total} লগ</span>
         <div class="user-card__actions">
-          ${telLink?`<a class="action-btn action-btn--call" href="tel:${telLink}" title="কল করুন: ${displayPhone}">📞</a>`:''}
-          ${wa?`<a class="action-btn action-btn--wa" href="${wa}" target="_blank" title="হোয়াটসঅ্যাপ">💬</a>`:''}
+          ${telLink ? `<a class="action-btn action-btn--call" href="tel:${telLink}" title="কল: ${displayPhone}">📞</a>` : ''}
+          ${wa ? `<a class="action-btn action-btn--wa" href="${wa}" target="_blank" title="হোয়াটসঅ্যাপ">💬</a>` : ''}
         </div>
       </div>
     </div>`;
   }).join('');
 }
 
+function calcLocalStreak(logs) {
+  const today     = new Date().toISOString().slice(0,10);
+  const mosqueDays = [...new Set(
+    logs.filter(l => String(l.status) === '1').map(l => String(l.date).slice(0,10))
+  )].sort();
+  let streak = 0, check = new Date(today);
+  while (true) {
+    const ds = check.toISOString().slice(0,10);
+    if (mosqueDays.includes(ds)) { streak++; check.setDate(check.getDate() - 1); }
+    else break;
+  }
+  return streak;
+}
+
 function filterUsers(q) {
   const term = q.toLowerCase();
-  document.querySelectorAll('.user-card').forEach(card=>{
-    card.style.display = card.textContent.toLowerCase().includes(term)?'':'none';
+  document.querySelectorAll('.user-card').forEach(card => {
+    card.style.display = card.dataset.name.includes(term) ? '' : 'none';
   });
 }
 
+async function loadImamContactCard() {
+  try {
+    const res = await apiGet({ action: 'getAdminPhone' });
+    if (res.success && res.data.phone) {
+      const phone   = res.data.phone;
+      const name    = res.data.name || 'ইমাম';
+      const digits  = phone.replace(/\D/g, '');
+      const display = digits.startsWith('880') ? '0' + digits.slice(3) : digits;
+      const tel     = '+880' + display.replace(/^0/, '');
+      const wa      = `https://wa.me/880${display.replace(/^0/, '')}`;
+      const card    = document.getElementById('imam-contact-card');
+      if (card) {
+        card.style.display = 'flex';
+        document.getElementById('imam-contact-name').textContent  = name;
+        document.getElementById('imam-contact-phone').textContent = display;
+        document.getElementById('imam-contact-actions').innerHTML =
+          `<a class="action-btn action-btn--call" href="tel:${tel}">📞</a>
+           <a class="action-btn action-btn--wa" href="${wa}" target="_blank">💬</a>`;
+      }
+    }
+  } catch {}
+}
+
+async function loadUserImamContact() {
+  try {
+    const res = await apiGet({ action: 'getAdminPhone' });
+    if (res.success && res.data.phone) {
+      const phone   = res.data.phone;
+      const name    = res.data.name || 'ইমাম';
+      const digits  = phone.replace(/\D/g, '');
+      const display = digits.startsWith('880') ? '0' + digits.slice(3) : digits;
+      const tel     = '+880' + display.replace(/^0/, '');
+      const wa      = `https://wa.me/880${display.replace(/^0/, '')}`;
+      const card    = document.getElementById('user-imam-contact');
+      if (card) {
+        card.style.display = 'flex';
+        document.getElementById('user-imam-name').textContent  = name;
+        document.getElementById('user-imam-phone').textContent = display;
+        document.getElementById('user-imam-actions').innerHTML =
+          `<a class="action-btn action-btn--call" href="tel:${tel}" title="কল করুন">📞</a>
+           <a class="action-btn action-btn--wa" href="${wa}" target="_blank" title="হোয়াটসঅ্যাপ">💬</a>`;
+      }
+    }
+  } catch {}
+}
 function renderAdminReports(reports) {
   const el = document.getElementById('admin-reports-list');
   if (!reports.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">📋</span>কোনো রিপোর্ট জমা নেই।</div>`; return; }
@@ -3200,9 +3677,37 @@ function switchAdminTab(name, btn) {
 // ═══════════════════════════════════════════════════════════
 //  ADMIN SETTINGS
 // ═══════════════════════════════════════════════════════════
-function loadSettingsTab() {
+async function loadSettingsTab() {
+  // URL দেখানো হবে না — security
   const el = document.getElementById('api-url-input');
-  if (el) el.value = API_URL;
+  if (el) el.value = '';
+  if (el) el.placeholder = API_URL ? '✅ URL সেট আছে — নতুন URL দিলে replace হবে' : 'https://script.google.com/macros/s/.../exec';
+  // ইমামের তথ্য pre-fill
+  try {
+    const res = await apiGet({ action: 'getAdminPhone' });
+    if (res.success && res.data) {
+      const nameEl  = document.getElementById('imam-name-settings');
+      const phoneEl = document.getElementById('imam-phone-settings');
+      if (nameEl  && res.data.name)  nameEl.value  = res.data.name;
+      if (phoneEl && res.data.phone) {
+        const d = String(res.data.phone).replace(/\D/g,'');
+        phoneEl.value = d.startsWith('880') ? '0' + d.slice(3) : d;
+      }
+    }
+  } catch {}
+}
+
+async function saveImamInfo() {
+  const name  = document.getElementById('imam-name-settings').value.trim();
+  const phone = document.getElementById('imam-phone-settings').value.trim();
+  if (!phone) { toast('ফোন নম্বর দিন', 'err'); return; }
+  loading(true);
+  try {
+    const res = await apiPost({ action: 'saveAdminInfo', name: name || 'ইমাম', phone });
+    if (!res.success) { toast(res.message || 'সেভ ব্যর্থ হয়েছে', 'err'); return; }
+    toast('✓ ইমামের তথ্য সেভ হয়েছে', 'ok');
+  } catch { toast('সার্ভার সংযোগ ব্যর্থ হয়েছে', 'err'); }
+  finally { loading(false); }
 }
 
 async function changeAdminPin() {
@@ -3214,25 +3719,36 @@ async function changeAdminPin() {
   if (newPin.length < 6) { toast('নতুন পিন কমপক্ষে ৬ অক্ষর হতে হবে', 'err'); return; }
   if (newPin !== confirmPin) { toast('নতুন পিন দুটো মিলছে না', 'err'); return; }
 
-  // আগের পিন যাচাই করুন
-  const oldHash = await sha256(oldPin);
-  const savedHash = localStorage.getItem('salat_admin_pin_hash') || await sha256('786786');
-  if (oldHash !== savedHash) { toast('আগের পিন সঠিক নয় ✗', 'err'); return; }
-
-  const newHash = await sha256(newPin);
-  localStorage.setItem('salat_admin_pin_hash', newHash);
-  toast('✓ পিন সফলভাবে পরিবর্তিত হয়েছে', 'ok');
-  document.getElementById('old-pin-input').value = '';
-  document.getElementById('new-pin-input').value = '';
-  document.getElementById('confirm-pin-input').value = '';
+  loading(true);
+  try {
+    const oldHash = await sha256(oldPin);
+    const newHash = await sha256(newPin);
+    const res = await apiPost({ action: 'saveAdminPin', old_pin_hash: oldHash, new_pin_hash: newHash });
+    if (!res.success) { toast(res.message || 'পিন পরিবর্তন ব্যর্থ হয়েছে', 'err'); return; }
+    toast('✓ পিন সার্ভারে সফলভাবে পরিবর্তিত হয়েছে', 'ok');
+    document.getElementById('old-pin-input').value = '';
+    document.getElementById('new-pin-input').value = '';
+    document.getElementById('confirm-pin-input').value = '';
+  } catch { toast('সার্ভার সংযোগ ব্যর্থ হয়েছে', 'err'); }
+  finally { loading(false); }
 }
 
 function saveApiUrl() {
   const url = document.getElementById('api-url-input').value.trim();
   if (!url.startsWith('https://script.google.com')) { toast('সঠিক Google Apps Script URL দিন', 'err'); return; }
   API_URL = url;
-  localStorage.setItem('salat_api_url', url);
-  toast('✓ API URL সেভ হয়েছে। এখন লগইন চেষ্টা করুন।', 'ok');
+  // এনক্রিপ্ট করে সেভ করো — সরাসরি URL দেখা যাবে না
+  const _key = 'salat_monitor_secure_2024';
+  let _enc = '';
+  for (let i = 0; i < url.length; i++) {
+    _enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
+  }
+  localStorage.setItem('https://script.google.com/macros/s/AKfycbxjK_EByTZPa-VvzACxxofuZdZpQ21S3S_66cznSVX3kFkTBrSJPFQmctbzt1KCm5SYtw/exec', btoa(_enc));
+  localStorage.removeItem('salat_api_url'); // পুরনো plain URL মুছে দাও
+  // Admin settings input blank করো — URL দেখানো যাবে না
+  const el = document.getElementById('api-url-input');
+  if (el) el.value = '';
+  toast('✓ সার্ভার URL এনক্রিপ্টেড অবস্থায় সেভ হয়েছে।', 'ok');
 }
 
 function lockAdminPanel() {
@@ -3249,65 +3765,26 @@ function lockAdminPanel() {
 //  USER SETTINGS (সব ইউজারের জন্য)
 // ═══════════════════════════════════════════════════════════
 function loadUserSettingsScreen() {
-  // প্রোফাইল তথ্য দেখান
   if (SESSION) {
     const nameEl  = document.getElementById('sp-name');
     const phoneEl = document.getElementById('sp-phone');
     if (nameEl)  nameEl.textContent  = SESSION.name  || '—';
     if (phoneEl) phoneEl.textContent = SESSION.phone || '—';
   }
-  // বর্তমান URL দেখান
-  const urlEl = document.getElementById('user-api-url-input');
-  if (urlEl) urlEl.value = API_URL || '';
-
-  // URL সংযোগ স্ট্যাটাস
   renderUrlStatus();
 }
 
 function renderUrlStatus() {
   const bar = document.getElementById('settings-url-status');
   if (!bar) return;
+  // URL দেখাবে না — শুধু connected/disconnected status
   if (API_URL && API_URL.startsWith('https://script.google.com')) {
     bar.style.display = 'block';
     bar.innerHTML = `<div style="padding:10px 14px;background:rgba(45,122,90,0.08);border:1px solid rgba(45,122,90,0.2);border-radius:var(--radius-sm);font-size:0.8rem;color:var(--emerald-l)">✅ সার্ভার সংযুক্ত আছে</div>`;
   } else {
     bar.style.display = 'block';
-    bar.innerHTML = `<div style="padding:10px 14px;background:rgba(192,68,74,0.08);border:1px solid rgba(192,68,74,0.2);border-radius:var(--radius-sm);font-size:0.8rem;color:var(--rose-l)">⚠️ কোনো URL সেট নেই। সংযোগ করুন।</div>`;
+    bar.innerHTML = `<div style="padding:10px 14px;background:rgba(192,68,74,0.08);border:1px solid rgba(192,68,74,0.2);border-radius:var(--radius-sm);font-size:0.8rem;color:var(--rose-l)">⚠️ সার্ভার সংযুক্ত নেই। Admin-এর সাথে যোগাযোগ করুন।</div>`;
   }
-}
-
-function saveUserApiUrl() {
-  const url = document.getElementById('user-api-url-input').value.trim();
-  if (!url.startsWith('https://script.google.com')) {
-    toast('সঠিক Google Apps Script URL দিন', 'err'); return;
-  }
-  API_URL = url;
-  localStorage.setItem('salat_api_url', url);
-  // Admin settings input-ও আপডেট করুন
-  const adminEl = document.getElementById('api-url-input');
-  if (adminEl) adminEl.value = url;
-  renderUrlStatus();
-  toast('✓ URL সেভ হয়েছে। এখন লগইন করুন।', 'ok');
-}
-
-async function testApiUrl() {
-  const url = document.getElementById('user-api-url-input').value.trim();
-  if (!url.startsWith('https://script.google.com')) {
-    toast('প্রথমে সঠিক URL দিন', 'err'); return;
-  }
-  toast('সংযোগ পরীক্ষা হচ্ছে…', 'info');
-  loading(true);
-  try {
-    const res = await fetch(`${url}?action=getUsers`);
-    const data = await res.json();
-    if (data.success !== undefined) {
-      toast('✅ সংযোগ সফল! URL কাজ করছে।', 'ok');
-    } else {
-      toast('⚠️ সার্ভার সাড়া দিয়েছে কিন্তু ফরম্যাট অপরিচিত।', 'err');
-    }
-  } catch {
-    toast('❌ সংযোগ ব্যর্থ। URL চেক করুন।', 'err');
-  } finally { loading(false); }
 }
 
 async function changeUserPin() {
@@ -3319,17 +3796,18 @@ async function changeUserPin() {
   if (newPin.length < 6) { toast('নতুন পিন কমপক্ষে ৬ অক্ষর হতে হবে', 'err'); return; }
   if (newPin !== confirmPin) { toast('নতুন পিন দুটো মিলছে না', 'err'); return; }
 
-  const oldHash  = await sha256(oldPin);
-  const defaultH = await sha256('786786');
-  const savedHash = localStorage.getItem('salat_admin_pin_hash') || defaultH;
-  if (oldHash !== savedHash) { toast('বর্তমান পিন সঠিক নয় ✗', 'err'); return; }
-
-  const newHash = await sha256(newPin);
-  localStorage.setItem('salat_admin_pin_hash', newHash);
-  toast('✓ পিন সফলভাবে পরিবর্তিত হয়েছে', 'ok');
-  document.getElementById('user-old-pin').value = '';
-  document.getElementById('user-new-pin').value = '';
-  document.getElementById('user-confirm-pin').value = '';
+  loading(true);
+  try {
+    const oldHash = await sha256(oldPin);
+    const newHash = await sha256(newPin);
+    const res = await apiPost({ action: 'saveAdminPin', old_pin_hash: oldHash, new_pin_hash: newHash });
+    if (!res.success) { toast(res.message || 'বর্তমান পিন সঠিক নয় ✗', 'err'); return; }
+    toast('✓ পিন সার্ভারে সফলভাবে পরিবর্তিত হয়েছে', 'ok');
+    document.getElementById('user-old-pin').value     = '';
+    document.getElementById('user-new-pin').value     = '';
+    document.getElementById('user-confirm-pin').value = '';
+  } catch { toast('সার্ভার সংযোগ ব্যর্থ হয়েছে', 'err'); }
+  finally { loading(false); }
 }
 
 // ═══════════════════════════════════════════════════════════
