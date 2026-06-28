@@ -1151,6 +1151,17 @@ select.field__input { appearance:none; }
         <div style="font-size:0.8rem;color:var(--text-muted);margin-top:6px">শুধুমাত্র অনুমোদিত ব্যক্তির জন্য</div>
       </div>
       <div class="card card--gold">
+        <!-- API URL — খালি থাকলে আগে বসাতে হবে -->
+        <div class="field" id="admin-url-section">
+          <label class="field__label">Apps Script URL <span id="url-status-icon">⚠️</span></label>
+          <input class="field__input" type="url" id="admin-url-standalone-input"
+                 placeholder="https://script.google.com/macros/s/.../exec"
+                 style="font-size:0.78rem"/>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px" id="admin-url-status-text">
+            Apps Script থেকে পাওয়া Web App URL এখানে বসান
+          </div>
+        </div>
+
         <!-- ইমামের নাম -->
         <div class="field">
           <label class="field__label">আপনার নাম</label>
@@ -1894,11 +1905,11 @@ function _decodeUrl() {
 }
 
 // Runtime-এ URL সেট হয় — source code-এ সরাসরি দেখা যায় না
-let API_URL = localStorage.getItem('https://script.google.com/macros/s/AKfycbxjK_EByTZPa-VvzACxxofuZdZpQ21S3S_66cznSVX3kFkTBrSJPFQmctbzt1KCm5SYtw/exec')
+let API_URL = localStorage.getItem('https://script.google.com/macros/s/AKfycbyDqUj7vY49fpq563L11tibCMAzjSmRVHZ8no4vszHozzMpiaBpwJqIp5AAeYYZLA6Qqg/exec')
   ? (function(){
       try {
         const _key = 'salat_monitor_secure_2024';
-        const _enc = atob(localStorage.getItem('https://script.google.com/macros/s/AKfycbxjK_EByTZPa-VvzACxxofuZdZpQ21S3S_66cznSVX3kFkTBrSJPFQmctbzt1KCm5SYtw/exec'));
+        const _enc = atob(localStorage.getItem('https://script.google.com/macros/s/AKfycbyDqUj7vY49fpq563L11tibCMAzjSmRVHZ8no4vszHozzMpiaBpwJqIp5AAeYYZLA6Qqg/exec'));
         let _dec = '';
         for (let i = 0; i < _enc.length; i++) {
           _dec += String.fromCharCode(_enc.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
@@ -2545,16 +2556,72 @@ async function unlockAdminStandalone() {
   const pin   = document.getElementById('admin-pin-standalone').value;
   const phone = document.getElementById('admin-phone-standalone').value.trim();
   const name  = document.getElementById('admin-name-standalone').value.trim();
+
   if (!pin)   { toast('পিন দিন', 'err'); return; }
   if (!phone) { toast('ফোন নম্বর দিন', 'err'); return; }
+
+  // ── URL field থেকেও সেভ করি ──────────────────────────────
+  const urlField = document.getElementById('admin-url-standalone-input');
+  if (urlField && urlField.value.trim().startsWith('https://script.google.com')) {
+    const url = urlField.value.trim();
+    const _key = 'salat_monitor_secure_2024';
+    let enc = '';
+    for (let i = 0; i < url.length; i++)
+      enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
+    localStorage.setItem('https://script.google.com/macros/s/AKfycbyDqUj7vY49fpq563L11tibCMAzjSmRVHZ8no4vszHozzMpiaBpwJqIp5AAeYYZLA6Qqg/exec', btoa(enc));
+    API_URL = url;
+  }
+
+  // ── API URL চেক ──────────────────────────────────────────
+  if (!API_URL || !API_URL.startsWith('http')) {
+    // URL নেই — URL input দেখাই
+    const hint = document.getElementById('admin-pin-hint');
+    if (hint) {
+      hint.innerHTML = '⚠️ আগে <strong>API URL</strong> সেট করুন:';
+    }
+    const urlBox = document.getElementById('admin-url-quick');
+    if (urlBox) {
+      urlBox.style.display = 'block';
+    } else {
+      // Dynamic URL input inject করি
+      const pinWrap = document.getElementById('admin-pin-standalone').closest('.card--gold');
+      if (pinWrap && !document.getElementById('admin-url-quick')) {
+        const div = document.createElement('div');
+        div.id = 'admin-url-quick';
+        div.className = 'field';
+        div.style.marginTop = '14px';
+        div.innerHTML = `
+          <label class="field__label" style="color:var(--rose-l)">⚠️ API URL বসান (apps script URL)</label>
+          <input class="field__input" type="url" id="admin-url-quick-input"
+            placeholder="https://script.google.com/macros/s/.../exec"
+            style="font-size:0.78rem"/>
+          <button class="btn btn--ghost btn--sm btn--full" style="margin-top:8px"
+            onclick="saveQuickUrl()">✅ URL সেভ করুন</button>`;
+        pinWrap.appendChild(div);
+      }
+    }
+    toast('আগে API URL সেট করুন', 'err');
+    return;
+  }
 
   loading(true);
   try {
     const hash = await sha256(pin);
-    const res  = await apiGet({ action: 'verifyAdminPin', pin_hash: hash });
-    if (!res.success) { toast(res.message || 'ভুল পিন', 'err'); return; }
+    let res;
+    try {
+      res = await apiGet({ action: 'verifyAdminPin', pin_hash: hash });
+    } catch (fetchErr) {
+      // Network error — আলাদা message
+      toast('সার্ভারে পৌঁছানো যাচ্ছে না। API URL ঠিক আছে কিনা দেখুন।', 'err');
+      return;
+    }
 
-    // ইমামের ফোন নম্বর সার্ভারে সেভ করি
+    if (!res.success) {
+      toast(res.message || 'পিন সঠিক নয়', 'err');
+      return;
+    }
+
+    // ইমামের ফোন নম্বর সার্ভারে সেভ
     const adminName = name || 'ইমাম';
     await apiPost({ action: 'saveAdminInfo', phone, name: adminName }).catch(() => {});
 
@@ -2574,12 +2641,29 @@ async function unlockAdminStandalone() {
     } else {
       toast('✓ ইমাম প্যানেলে স্বাগতম', 'ok');
     }
-  } catch { toast('সার্ভার থেকে যাচাই ব্যর্থ হয়েছে', 'err'); }
-  finally { loading(false); }
+  } catch (e) {
+    console.error('unlockAdminStandalone error:', e);
+    toast('অপ্রত্যাশিত সমস্যা হয়েছে। Console দেখুন।', 'err');
+  } finally { loading(false); }
 }
 
-function loginAsAdmin() {
-  goToAdminGate();
+function saveQuickUrl() {
+  const inp = document.getElementById('admin-url-quick-input');
+  if (!inp || !inp.value.trim()) { toast('URL দিন', 'err'); return; }
+  const url = inp.value.trim();
+  if (!url.startsWith('https://script.google.com')) {
+    toast('Apps Script URL হতে হবে', 'err'); return;
+  }
+  // saveApiUrl logic
+  const _key = 'salat_monitor_secure_2024';
+  let enc = '';
+  for (let i = 0; i < url.length; i++)
+    enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
+  localStorage.setItem('https://script.google.com/macros/s/AKfycbyDqUj7vY49fpq563L11tibCMAzjSmRVHZ8no4vszHozzMpiaBpwJqIp5AAeYYZLA6Qqg/exec', btoa(enc));
+  API_URL = url;
+  const box = document.getElementById('admin-url-quick');
+  if (box) box.style.display = 'none';
+  toast('✅ URL সেভ হয়েছে! এখন পিন দিয়ে ঢুকুন।', 'ok');
 }
 
 function enterApp() {
@@ -3064,33 +3148,52 @@ async function loadPublicQA() {
 async function loadAdminData() {
   loading(true);
   try {
-    const [usersRes, logsRes, reportsRes, chatsRes] = await Promise.all([
-      apiGet({ action:'getUsers' }),
-      apiGet({ action:'getSalahLogs' }),
-      apiGet({ action:'getSocialReports' }),
-      apiGet({ action:'getLiveChat' }),
-    ]);
-    const users   = usersRes.success   ? usersRes.data   : [];
-    const logs    = logsRes.success    ? logsRes.data    : [];
-    const reports = reportsRes.success ? reportsRes.data : [];
-    const chats   = chatsRes.success   ? chatsRes.data   : [];
+    // একটাই API call — সার্ভারে সব aggregate করে আসে
+    const res = await apiGet({ action: 'getAdminStats' });
+    if (!res.success) { toast('অ্যাডমিন ডেটা লোড ব্যর্থ হয়েছে', 'err'); return; }
 
-    ALL_USERS_CACHE = users;
-    document.getElementById('stat-users').textContent   = users.length;
-    document.getElementById('stat-logs').textContent    = logs.length;
-    document.getElementById('stat-reports').textContent = reports.length;
-    document.getElementById('stat-chats').textContent   = chats.length;
+    const { counts, userSummary, waqtChart, line14 } = res.data;
 
-    renderUserList(users, logs);
-    renderAdminReports(reports);
-    renderAdminQA(chats);
+    ALL_USERS_CACHE = userSummary; // enriched data directly from server
+
+    // Stat counters
+    document.getElementById('stat-users').textContent   = counts.users;
+    document.getElementById('stat-logs').textContent    = counts.logs;
+    document.getElementById('stat-reports').textContent = counts.reports;
+    document.getElementById('stat-chats').textContent   = counts.chats;
+
+    // Render members (pre-enriched — no client-side log processing)
+    renderUserListFromStats(userSummary);
+
+    // Reports and QA — load separately (lightweight)
+    loadAdminReportsLazy();
+    loadAdminQALazy();
     loadAdminAudit();
-    buildCharts(users, logs);
+
+    // Charts — defer to next frame so UI renders first
+    requestAnimationFrame(function() {
+      buildChartsFromStats(counts, waqtChart, line14, userSummary);
+    });
+
     loadImamContactCard();
   } catch (e) {
     toast('অ্যাডমিন ডেটা লোড ব্যর্থ হয়েছে', 'err');
     console.error(e);
   } finally { loading(false); }
+}
+
+async function loadAdminReportsLazy() {
+  try {
+    const res = await apiGet({ action: 'getSocialReports' });
+    if (res.success) renderAdminReports(res.data);
+  } catch {}
+}
+
+async function loadAdminQALazy() {
+  try {
+    const res = await apiGet({ action: 'getLiveChat' });
+    if (res.success) renderAdminQA(res.data);
+  } catch {}
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -3110,240 +3213,127 @@ function destroyChart(id) {
 
 function rebuildCharts() { if (ALL_USERS_CACHE.length) loadAdminData(); }
 
-function buildCharts(users, logs) {
+function buildChartsFromStats(counts, waqtChart, line14, userSummary) {
   const { gridColor, textColor } = chartDefaults();
   Chart.defaults.color = textColor;
 
-  // ── সারসংক্ষেপ stat কার্ড আপডেট ──────────────────────────
-  const totalLogs  = logs.length;
-  const mosqueLogs = logs.filter(l=>String(l.status)==='1').length;
-  const missLogs   = logs.filter(l=>String(l.status)==='0').length;
-  const mosqPct    = totalLogs ? Math.round(mosqueLogs/totalLogs*100) : 0;
-  const missPct    = totalLogs ? Math.round(missLogs/totalLogs*100) : 0;
+  // ── সারসংক্ষেপ stat কার্ড ──────────────────────────────
+  const el = id => document.getElementById(id);
+  if (el('cstat-mosque-pct')) el('cstat-mosque-pct').textContent = counts.mosque_pct + '%';
+  if (el('cstat-miss-pct'))   el('cstat-miss-pct').textContent   = counts.miss_pct   + '%';
+  if (el('cstat-active'))     el('cstat-active').textContent     = counts.active_today;
+  const avgStreak = userSummary.length
+    ? Math.round(userSummary.reduce((s,u)=>s+u.streak,0)/userSummary.length)
+    : 0;
+  if (el('cstat-streak-avg')) el('cstat-streak-avg').textContent = avgStreak;
 
-  // সক্রিয় সদস্য: শেষ ৭ দিনে অন্তত একটা লগ আছে
-  const cutoff7 = new Date(); cutoff7.setDate(cutoff7.getDate()-7);
-  const activeIds = new Set(logs.filter(l=>new Date(l.date||l.timestamp)>=cutoff7).map(l=>l.user_id));
+  const wNames = waqtChart.map(w => w.waqt);
 
-  const avgStreakEl = document.getElementById('cstat-streak-avg');
-  // সরল গড়: মোট mosque log / user count
-  const avgMosque = users.length ? Math.round(mosqueLogs/users.length) : 0;
-
-  document.getElementById('cstat-mosque-pct').textContent = mosqPct + '%';
-  document.getElementById('cstat-miss-pct').textContent   = missPct + '%';
-  document.getElementById('cstat-active').textContent     = activeIds.size;
-  if (avgStreakEl) avgStreakEl.textContent = avgMosque;
-
-  // ── ১. RADAR — ওয়াক্তভিত্তিক মসজিদ হার ──────────────────
+  // ── ১. Radar — মসজিদ হার per waqt ───────────────────────
+  const totalPerWaqt = waqtChart.map(w => w.mosque + w.home + w.travel + w.missed);
+  const mosqPctW = waqtChart.map((w,i) => totalPerWaqt[i] ? Math.round(w.mosque/totalPerWaqt[i]*100) : 0);
   destroyChart('radar');
-  const waqtStats = {};
-  WAQT_LIST.forEach(w=>{ waqtStats[w.key]={ total:0, mosque:0, home:0, travel:0, missed:0 }; });
-  logs.forEach(l=>{
-    if (!waqtStats[l.waqt]) return;
-    waqtStats[l.waqt].total++;
-    if (String(l.status)==='1') waqtStats[l.waqt].mosque++;
-    else if (String(l.status)==='2') waqtStats[l.waqt].home++;
-    else if (String(l.status)==='3') waqtStats[l.waqt].travel++;
-    else waqtStats[l.waqt].missed++;
-  });
-  CHARTS.radar = new Chart(document.getElementById('chart-radar'), {
+  const radarCtx = el('chart-radar');
+  if (radarCtx) CHARTS['radar'] = new Chart(radarCtx, {
     type:'radar',
-    data:{
-      labels: WAQT_LIST.map(w=>`${w.icon} ${w.key}`),
-      datasets:[{
-        label:'মসজিদ %',
-        data: WAQT_LIST.map(w=>waqtStats[w.key].total?Math.round(waqtStats[w.key].mosque/waqtStats[w.key].total*100):0),
-        backgroundColor:'rgba(45,122,90,0.18)',
-        borderColor:'#3DA876', pointBackgroundColor:'#3DA876', pointRadius:5,
-        borderWidth:2,
-      },{
-        label:'মিস %',
-        data: WAQT_LIST.map(w=>waqtStats[w.key].total?Math.round(waqtStats[w.key].missed/waqtStats[w.key].total*100):0),
-        backgroundColor:'rgba(192,68,74,0.1)',
-        borderColor:'#C0444A', pointBackgroundColor:'#C0444A', pointRadius:3,
-        borderDash:[4,3], borderWidth:1.5,
-      }],
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'bottom', labels:{ padding:10, font:{ size:10 } } } },
-      scales:{
-        r:{ min:0, max:100, grid:{ color:gridColor }, angleLines:{ color:gridColor },
-            ticks:{ display:false, stepSize:25 },
-            pointLabels:{ font:{ size:11 }, color:textColor },
-        },
-      },
-    },
+    data:{ labels:wNames, datasets:[{ label:'মসজিদ %', data:mosqPctW,
+      backgroundColor:'rgba(45,122,90,0.15)', borderColor:'#2D7A5A',
+      pointBackgroundColor:'#2D7A5A', pointRadius:4 }] },
+    options:{ scales:{ r:{ min:0, max:100, ticks:{ stepSize:25 },
+      grid:{ color:gridColor }, pointLabels:{ color:textColor } } },
+      plugins:{ legend:{ display:false } }, responsive:true }
   });
 
-  // ── ২. GROUPED BAR — ৫ ওয়াক্ত × ৪ অবস্থা ─────────────────
+  // ── ২. Grouped bar — ওয়াক্তভিত্তিক ─────────────────────
   destroyChart('waqt-bar');
-  CHARTS['waqt-bar'] = new Chart(document.getElementById('chart-waqt-bar'), {
+  const waqtBarCtx = el('chart-waqt-bar');
+  if (waqtBarCtx) CHARTS['waqt-bar'] = new Chart(waqtBarCtx, {
     type:'bar',
-    data:{
-      labels: WAQT_LIST.map(w=>`${w.icon} ${w.key}`),
-      datasets:[
-        { label:'মসজিদ', data:WAQT_LIST.map(w=>waqtStats[w.key].mosque),  backgroundColor:'#2D7A5A', borderRadius:4 },
-        { label:'বাড়ি',  data:WAQT_LIST.map(w=>waqtStats[w.key].home),    backgroundColor:'#C9A84C', borderRadius:4 },
-        { label:'সফর',   data:WAQT_LIST.map(w=>waqtStats[w.key].travel),  backgroundColor:'#4A6FA5', borderRadius:4 },
-        { label:'মিস',   data:WAQT_LIST.map(w=>waqtStats[w.key].missed),  backgroundColor:'#C0444A', borderRadius:4 },
-      ],
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'bottom', labels:{ padding:10, font:{ size:10 }, boxWidth:10 } },
-        tooltip:{
-          callbacks:{
-            afterBody: (items) => {
-              const wKey = WAQT_LIST[items[0].dataIndex].key;
-              const s = waqtStats[wKey];
-              return s.total ? `মোট: ${s.total} · মসজিদ ${Math.round(s.mosque/s.total*100)}%` : '';
-            }
-          }
-        }
-      },
-      scales:{
-        y:{ grid:{ color:gridColor }, beginAtZero:true, ticks:{ precision:0 } },
-        x:{ grid:{ display:false } },
-      },
-    },
+    data:{ labels:wNames, datasets:[
+      { label:'মসজিদ', data:waqtChart.map(w=>w.mosque), backgroundColor:'#2D7A5A' },
+      { label:'বাড়ি',  data:waqtChart.map(w=>w.home),   backgroundColor:'#C9A84C' },
+      { label:'সফর',   data:waqtChart.map(w=>w.travel),  backgroundColor:'#4A6FA5' },
+      { label:'মিস',   data:waqtChart.map(w=>w.missed),  backgroundColor:'#C0444A' },
+    ]},
+    options:{ responsive:true, scales:{
+      x:{ stacked:false, grid:{ color:gridColor } },
+      y:{ stacked:false, grid:{ color:gridColor }, ticks:{ color:textColor } }
+    }, plugins:{ legend:{ labels:{ color:textColor } } } }
   });
 
-  // ── ৩. LINE — দৈনিক ট্রেন্ড ──────────────────────────────
+  // ── ৩. Line — শেষ ১৪ দিন মসজিদ ────────────────────────
   destroyChart('line');
-  const days14 = Array.from({length:14},(_,i)=>{
-    const d=new Date(); d.setDate(d.getDate()-(13-i));
-    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  });
-  const lineDataMosque = days14.map(date=>{
-    const dl=logs.filter(l=>String(l.date||'').slice(0,10)===date);
-    return dl.length?Math.round(dl.filter(l=>String(l.status)==='1').length/dl.length*100):null;
-  });
-  const lineDataMiss = days14.map(date=>{
-    const dl=logs.filter(l=>String(l.date||'').slice(0,10)===date);
-    return dl.length?Math.round(dl.filter(l=>String(l.status)==='0').length/dl.length*100):null;
-  });
-  CHARTS.line = new Chart(document.getElementById('chart-line'), {
+  const lineCtx = el('chart-line');
+  if (lineCtx) CHARTS['line'] = new Chart(lineCtx, {
     type:'line',
-    data:{
-      labels: days14.map(d=>d.slice(5)),
-      datasets:[
-        { label:'মসজিদ %', data:lineDataMosque,
-          borderColor:'#C9A84C', backgroundColor:'rgba(201,168,76,0.08)',
-          tension:0.4, fill:true, pointBackgroundColor:'#C9A84C', pointRadius:4, spanGaps:true },
-        { label:'মিস %', data:lineDataMiss,
-          borderColor:'#C0444A', backgroundColor:'rgba(192,68,74,0.05)',
-          tension:0.4, fill:true, pointBackgroundColor:'#C0444A', pointRadius:3, spanGaps:true,
-          borderDash:[4,3] },
-      ],
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'bottom', labels:{ padding:10, font:{ size:10 } } } },
-      scales:{
-        y:{ min:0, max:100, grid:{ color:gridColor }, ticks:{ callback:v=>v+'%' } },
-        x:{ grid:{ color:gridColor }, ticks:{ font:{ size:10 } } },
-      },
-    },
+    data:{ labels:line14.map(d=>d.date.slice(5)),
+      datasets:[{ label:'মসজিদে উপস্থিত (জন)',
+        data:line14.map(d=>d.mosque_users),
+        borderColor:'#2D7A5A', backgroundColor:'rgba(45,122,90,0.08)',
+        tension:0.3, fill:true, pointRadius:3 }] },
+    options:{ responsive:true, scales:{
+      x:{ grid:{ color:gridColor }, ticks:{ color:textColor } },
+      y:{ grid:{ color:gridColor }, ticks:{ color:textColor, stepSize:1 } }
+    }, plugins:{ legend:{ display:false } } }
   });
 
-  // ── ৪. DONUT — সামগ্রিক বিভাজন ───────────────────────────
+  // ── ৪. Donut — সামগ্রিক ─────────────────────────────────
+  const totM = waqtChart.reduce((s,w)=>s+w.mosque,0);
+  const totH = waqtChart.reduce((s,w)=>s+w.home,0);
+  const totT = waqtChart.reduce((s,w)=>s+w.travel,0);
+  const totX = waqtChart.reduce((s,w)=>s+w.missed,0);
   destroyChart('donut');
-  const sc={ '1':0,'2':0,'3':0,'0':0 };
-  logs.forEach(l=>{ if(sc[l.status]!==undefined) sc[l.status]++; });
-  CHARTS.donut = new Chart(document.getElementById('chart-donut'), {
+  const donutCtx = el('chart-donut');
+  if (donutCtx) CHARTS['donut'] = new Chart(donutCtx, {
     type:'doughnut',
-    data:{
-      labels:['মসজিদ','বাড়ি','সফর','মিস'],
-      datasets:[{ data:[sc['1'],sc['2'],sc['3'],sc['0']],
+    data:{ labels:['মসজিদ','বাড়ি','সফর','মিস'],
+      datasets:[{ data:[totM,totH,totT,totX],
         backgroundColor:['#2D7A5A','#C9A84C','#4A6FA5','#C0444A'],
-        borderColor:'transparent', hoverOffset:8 }],
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{ position:'bottom', labels:{ padding:12, font:{ size:11 } } },
-        tooltip:{ callbacks:{ label: ctx => {
-          const pct = totalLogs ? Math.round(ctx.raw/totalLogs*100) : 0;
-          return ` ${ctx.label}: ${ctx.raw} (${pct}%)`;
-        }}},
-      },
-      cutout:'65%',
-    },
+        borderWidth:0 }] },
+    options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ color:textColor } } } }
   });
 
-  // ── ৫. BAR — সেরা ১০ সদস্য ───────────────────────────────
+  // ── ৫. Bar — সেরা ১০ ─────────────────────────────────────
+  const top10 = [...userSummary].sort((a,b)=>b.mosque-a.mosque).slice(0,10);
   destroyChart('bar');
-  const userMosqueMap={};
-  logs.filter(l=>String(l.status)==='1').forEach(l=>{ userMosqueMap[l.user_id]=(userMosqueMap[l.user_id]||0)+1; });
-  const top10=users.map(u=>({ name:u.name, count:userMosqueMap[u.user_id]||0 }))
-    .sort((a,b)=>b.count-a.count).slice(0,10);
-  CHARTS.bar = new Chart(document.getElementById('chart-bar'), {
+  const barCtx = el('chart-bar');
+  if (barCtx) CHARTS['bar'] = new Chart(barCtx, {
     type:'bar',
-    data:{
-      labels:top10.map(u=>u.name.split(' ')[0]),
-      datasets:[{ label:'মসজিদ সালাত', data:top10.map(u=>u.count),
-        backgroundColor:top10.map((_,i)=>i===0?'#C9A84C':i===1?'#A0802A':i===2?'#6A5420':'rgba(201,168,76,0.28)'),
-        borderRadius:6, borderSkipped:false }],
-    },
-    options:{
-      indexAxis:'y',  // ← অনুভূমিক বার — নাম পড়া সহজ
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false },
-        tooltip:{ callbacks:{ label: ctx => ` ${ctx.raw}টি মসজিদ সালাত` }} },
-      scales:{
-        x:{ grid:{ color:gridColor }, beginAtZero:true, ticks:{ precision:0 } },
-        y:{ grid:{ display:false }, ticks:{ font:{ size:11 } } },
-      },
-    },
+    data:{ labels:top10.map(u=>u.name),
+      datasets:[{ label:'মসজিদ সালাত', data:top10.map(u=>u.mosque),
+        backgroundColor:'#2D7A5A', borderRadius:4 }] },
+    options:{ indexAxis:'y', responsive:true, scales:{
+      x:{ grid:{ color:gridColor }, ticks:{ color:textColor } },
+      y:{ grid:{ color:gridColor }, ticks:{ color:textColor } }
+    }, plugins:{ legend:{ display:false } } }
   });
 
-  // ── ৬. তাকবীরে তাহরিমা তালিকা ───────────────────────────
-  const today = new Date().toISOString().slice(0,10);
-  const todayLogs = logs.filter(l=>String(l.date||'').slice(0,10)===today);
-  const tkEl = document.getElementById('chart-takbeer-list');
-  if (tkEl) {
-    if (!todayLogs.length) {
-      tkEl.innerHTML = `<div class="empty-state" style="padding:16px"><span class="emoji">📅</span>আজকের কোনো লগ নেই।</div>`;
-    } else {
-      // ব্যবহারকারী × ওয়াক্ত গ্রিড
-      const userIds = [...new Set(todayLogs.map(l=>l.user_id))];
-      const rows = userIds.map(uid=>{
-        const uName = (users.find(u=>u.user_id===uid)||{}).name || uid;
-        const cells = WAQT_LIST.map(w=>{
-          const lg = todayLogs.find(l=>l.user_id===uid&&l.waqt===w.key);
-          if (!lg) return `<td style="text-align:center;color:var(--text-muted);font-size:11px">—</td>`;
-          const isMosque = String(lg.status)==='1';
-          const hasTk = lg.takbeer_with_imam==='1'||lg.takbeer_with_imam===1||lg.takbeer_with_imam===true;
-          return `<td style="text-align:center;font-size:14px" title="${w.key}: ${isMosque?(hasTk?'তাকবীরসহ মসজিদ ✓':'মসজিদ (তাকবীর ছাড়া)'):'মসজিদ নয়'}">
-            ${isMosque ? (hasTk ? '🟢' : '🕌') : (String(lg.status)==='0'?'❌':'⚪')}
-          </td>`;
-        }).join('');
-        return `<tr>
-          <td style="font-size:0.8rem;color:var(--text-body);padding:4px 6px;white-space:nowrap">${escHtml(uName)}</td>
-          ${cells}
-        </tr>`;
-      }).join('');
-      tkEl.innerHTML = `
-        <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:0.78rem">
-          <thead><tr style="color:var(--text-muted)">
-            <th style="text-align:left;padding:4px 6px">সদস্য</th>
-            ${WAQT_LIST.map(w=>`<th style="text-align:center;padding:4px">${w.icon}<br/><span style="font-size:9px">${w.key}</span></th>`).join('')}
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-        </div>
-        <div style="margin-top:10px;font-size:0.7rem;color:var(--text-muted);display:flex;gap:12px;flex-wrap:wrap">
-          <span>🟢 তাকবীরসহ মসজিদ</span><span>🕌 মসজিদ (তাকবীর ছাড়া)</span><span>❌ মিস</span><span>⚪ বাড়ি/সফর</span>
-        </div>`;
-    }
+  // ── ৬. তাকবীরে তাহরিমা ─────────────────────────────────
+  const takbeerList = document.getElementById('chart-takbeer-list');
+  if (takbeerList) {
+    const today = new Date().toISOString().slice(0,10);
+    const withTakbeer = userSummary.filter(u => {
+      const wm = u.waqtMap || {};
+      return Object.keys(wm).some(w => wm[w] && wm[w].status === '1');
+    });
+    takbeerList.innerHTML = withTakbeer.length
+      ? withTakbeer.map(u=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-soft)">
+          <span style="color:var(--emerald-l)">✅</span>
+          <span style="flex:1;font-size:0.85rem">${escHtml(u.name)}</span>
+          <span style="font-size:0.72rem;color:var(--text-muted)">${Object.keys(u.waqtMap||{}).filter(w=>(u.waqtMap[w]||{}).status==='1').join(', ')}</span>
+        </div>`).join('')
+      : '<div class="empty-state" style="padding:20px"><span class="emoji">📭</span>আজ এখনো মসজিদে নামাজের লগ নেই</div>';
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  ADMIN — USER LIST, REPORTS, Q&A, AUDIT
-// ═══════════════════════════════════════════════════════════
+function buildCharts(users, logs) {
+  // Legacy fallback — called if old code path used
+  // Convert to stats format and call new function
+  const counts = { mosque_pct: 0, miss_pct: 0, active_today: 0 };
+  buildChartsFromStats(counts, [], [], []);
+}
+
+
 let ALL_LOGS_CACHE = [];
 
 function renderUserList(users, logs) {
@@ -3351,32 +3341,27 @@ function renderUserList(users, logs) {
   applyMonitorFilter(document.getElementById('monitor-filter')?.value || 'all');
 }
 
-function applyMonitorFilter(filter) {
-  const users = ALL_USERS_CACHE;
-  const logs  = ALL_LOGS_CACHE;
-  const today = new Date().toISOString().slice(0,10);
+// New: uses pre-enriched data from getAdminStats — no client-side log crunching
+function renderUserListFromStats(userSummary) {
+  ALL_LOGS_CACHE = []; // not needed anymore
+  applyMonitorFilterFromStats(
+    document.getElementById('monitor-filter')?.value || 'all',
+    userSummary
+  );
+}
 
-  const enriched = users.map(u => {
-    const ul        = logs.filter(l => l.user_id === u.user_id);
-    const total     = ul.length;
-    const mosque    = ul.filter(l => String(l.status) === '1').length;
-    const home      = ul.filter(l => String(l.status) === '2').length;
-    const travel    = ul.filter(l => String(l.status) === '3').length;
-    const missed    = ul.filter(l => String(l.status) === '0').length;
-    const pct       = total ? Math.round(mosque / total * 100) : 0;
-    const todayLogs = ul.filter(l => String(l.date || '').slice(0, 10) === today);
-    const streak    = calcLocalStreak(ul);
-    const sorted    = ul.map(l => String(l.date).slice(0,10)).sort();
-    const lastLogDate    = sorted.length ? sorted[sorted.length - 1] : null;
-    const daysSinceLast  = lastLogDate ? Math.round((new Date(today) - new Date(lastLogDate)) / 86400000) : null;
-    return { ...u, ul, total, mosque, home, travel, missed, pct, todayLogs, streak, lastLogDate, daysSinceLast };
-  });
+function applyMonitorFilter(filter) {
+  applyMonitorFilterFromStats(filter, ALL_USERS_CACHE);
+}
+
+function applyMonitorFilterFromStats(filter, summary) {
+  const today = new Date().toISOString().slice(0, 10);
 
   // Summary chips
-  const activeToday   = enriched.filter(u => u.todayLogs.length > 0).length;
-  const inactiveToday = enriched.filter(u => u.todayLogs.length === 0).length;
-  const missUsers     = enriched.filter(u => u.missed > 0).length;
-  const ghostUsers    = enriched.filter(u => u.daysSinceLast !== null && u.daysSinceLast >= 3).length;
+  const activeToday   = summary.filter(u => u.waqtMap && Object.keys(u.waqtMap).length > 0).length;
+  const inactiveToday = summary.length - activeToday;
+  const ghostUsers    = summary.filter(u => u.daysSince !== null && u.daysSince >= 3).length;
+  const missUsers     = summary.filter(u => u.missed > 0).length;
   const summaryEl     = document.getElementById('monitor-summary');
   if (summaryEl) summaryEl.innerHTML = [
     `<span class="badge badge--green">✅ আজ সক্রিয়: ${activeToday}</span>`,
@@ -3388,120 +3373,120 @@ function applyMonitorFilter(filter) {
   // Alert bar
   const alertEl = document.getElementById('monitor-alert-bar');
   if (alertEl) {
-    const ghosts = enriched.filter(u => u.daysSinceLast !== null && u.daysSinceLast >= 3);
-    if (ghosts.length) {
-      alertEl.style.display = 'block';
-      alertEl.innerHTML = `⚠️ <strong>${ghosts.length} জন সদস্য ৩+ দিন ধরে কোনো নামাজ লগ করেননি:</strong> ${ghosts.map(u => escHtml(u.name)).join(', ')}`;
-    } else {
-      alertEl.style.display = 'none';
-    }
+    const ghosts = summary.filter(u => u.daysSince !== null && u.daysSince >= 3);
+    alertEl.style.display = ghosts.length ? 'block' : 'none';
+    if (ghosts.length)
+      alertEl.innerHTML = `⚠️ <strong>${ghosts.length} জন সদস্য ৩+ দিন ধরে লগ করেননি:</strong> ${ghosts.map(u => escHtml(u.name)).join(', ')}`;
   }
 
   // Filter
-  let filtered = enriched;
-  if (filter === 'active_today')   filtered = enriched.filter(u => u.todayLogs.length > 0);
-  if (filter === 'inactive_today') filtered = enriched.filter(u => u.todayLogs.length === 0);
-  if (filter === 'missed_any')     filtered = enriched.filter(u => u.missed > 0);
-  if (filter === 'top_streak')     filtered = [...enriched].sort((a,b) => b.streak - a.streak);
+  let filtered = summary;
+  if (filter === 'active_today')   filtered = summary.filter(u => u.waqtMap && Object.keys(u.waqtMap).length > 0);
+  if (filter === 'inactive_today') filtered = summary.filter(u => !u.waqtMap || Object.keys(u.waqtMap).length === 0);
+  if (filter === 'missed_any')     filtered = summary.filter(u => u.missed > 0);
+  if (filter === 'top_streak')     filtered = [...summary].sort((a, b) => b.streak - a.streak);
 
   const el = document.getElementById('admin-user-list');
-  if (!filtered.length) { el.innerHTML = `<div class="empty-state"><span class="emoji">👤</span>কোনো সদস্য পাওয়া যায়নি।</div>`; return; }
-
-  el.innerHTML = filtered.map(u => {
-    const rawPhone   = String(u.phone || '').trim();
-    const digitsOnly = rawPhone.replace(/\D/g, '');
-    const displayPhone = digitsOnly.startsWith('880') ? '0' + digitsOnly.slice(3)
-      : digitsOnly.startsWith('0') ? digitsOnly : digitsOnly ? '0' + digitsOnly : '';
-    const telLink = displayPhone ? '+880' + displayPhone.replace(/^0/, '') : '';
-    const wa = u.whatsapp_link || (displayPhone ? `https://wa.me/880${displayPhone.replace(/^0/, '')}` : '');
-
-    // Today's 5 waqt dots
-    const todayDots = ['Fajr','Dhuhr','Asr','Maghrib','Isha'].map(w => {
-      const lg    = u.todayLogs.find(l => l.waqt === w);
-      const color = !lg ? '#3a3a3a' : lg.status==='1'?'#2D7A5A':lg.status==='2'?'#C9A84C':lg.status==='3'?'#4A6FA5':'#C0444A';
-      const icon  = !lg ? '○' : lg.status==='1'?'🕌':lg.status==='2'?'🏠':lg.status==='3'?'✈️':'✗';
-      return `<span title="${w}" style="font-size:${lg?'13px':'11px'};color:${color}">${icon}</span>`;
-    }).join('');
-
-    // Last 7-day mini trend
-    const trendDots = Array.from({length: 7}, (_, i) => {
-      const d  = new Date(); d.setDate(d.getDate() - (6 - i));
-      const ds = d.toISOString().slice(0, 10);
-      const dayL      = u.ul.filter(l => String(l.date).slice(0,10) === ds);
-      const hasMosque = dayL.some(l => String(l.status) === '1');
-      const hasMissed = dayL.some(l => String(l.status) === '0');
-      const hasHome   = dayL.some(l => String(l.status) === '2');
-      const bg = !dayL.length ? 'var(--bg-elevated)'
-               : hasMosque  ? 'var(--emerald)'
-               : hasMissed  ? 'var(--rose)'
-               : hasHome    ? 'var(--gold)'
-               : 'var(--bg-elevated)';
-      return `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${bg};margin-right:1px" title="${ds}"></span>`;
-    }).join('');
-
-    // Status badge
-    const todayActive = u.todayLogs.length > 0;
-    const isGhost     = u.daysSinceLast !== null && u.daysSinceLast >= 3;
-    const statusBadge = isGhost
-      ? `<span style="font-size:0.65rem;background:rgba(192,68,74,0.12);color:var(--rose-l);border:1px solid var(--rose);border-radius:6px;padding:1px 6px">⚠️ ${u.daysSinceLast} দিন গায়েব</span>`
-      : todayActive
-        ? `<span style="font-size:0.65rem;background:rgba(45,122,90,0.12);color:var(--emerald-l);border:1px solid var(--emerald);border-radius:6px;padding:1px 6px">✅ আজ সক্রিয়</span>`
-        : `<span style="font-size:0.65rem;background:var(--bg-elevated);color:var(--text-muted);border:1px solid var(--border-soft);border-radius:6px;padding:1px 6px">⏸ আজ লগ নেই</span>`;
-
-    return `
-    <div class="user-card" id="ucard-${u.user_id}" data-name="${escHtml(u.name).toLowerCase()}" data-active="${todayActive}" data-missed="${u.missed > 0}" data-streak="${u.streak}">
-      <div class="user-card__avatar">👤</div>
-      <div class="user-card__info" style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <div class="user-card__name">${escHtml(u.name)}</div>
-          ${statusBadge}
-        </div>
-        <div class="user-card__phone">${displayPhone || '—'}</div>
-        <div style="display:flex;gap:5px;align-items:center;margin-top:4px">${todayDots}</div>
-        <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
-          <span style="font-size:0.62rem;color:var(--text-muted)">৭ দিন:</span>
-          ${trendDots}
-          <span style="font-size:0.65rem;color:var(--text-muted)">🔥${u.streak}</span>
-        </div>
-        <div class="attendance-bar-wrap" style="margin-top:5px">
-          <div style="display:flex;justify-content:space-between;font-size:0.67rem;color:var(--text-muted);margin-bottom:2px">
-            <span>🕌 ${u.mosque} &nbsp;🏠 ${u.home} &nbsp;✈️ ${u.travel} &nbsp;✗ ${u.missed}</span>
-            <span>${u.pct}%</span>
-          </div>
-          <div class="attendance-bar"><div class="attendance-bar__fill" style="width:${u.pct}%"></div></div>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-left:8px">
-        <span class="user-card__streak" style="font-family:var(--font-mono);font-size:0.7rem">${u.total} লগ</span>
-        <div class="user-card__actions">
-          ${telLink ? `<a class="action-btn action-btn--call" href="tel:${telLink}" title="কল: ${displayPhone}">📞</a>` : ''}
-          ${wa ? `<a class="action-btn action-btn--wa" href="${wa}" target="_blank" title="হোয়াটসঅ্যাপ">💬</a>` : ''}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function calcLocalStreak(logs) {
-  const today     = new Date().toISOString().slice(0,10);
-  const mosqueDays = [...new Set(
-    logs.filter(l => String(l.status) === '1').map(l => String(l.date).slice(0,10))
-  )].sort();
-  let streak = 0, check = new Date(today);
-  while (true) {
-    const ds = check.toISOString().slice(0,10);
-    if (mosqueDays.includes(ds)) { streak++; check.setDate(check.getDate() - 1); }
-    else break;
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty-state"><span class="emoji">👤</span>কোনো সদস্য পাওয়া যায়নি।</div>`;
+    return;
   }
-  return streak;
+
+  // Virtual render: only render visible cards, rest on scroll
+  renderUserPage(filtered, 0);
 }
+
+const PAGE_SIZE = 30; // একসাথে ৩০ জন render, বাকিরা scroll করলে load
+let _currentPage = 0;
+let _currentList = [];
+
+function renderUserPage(list, page) {
+  _currentList = list;
+  _currentPage = page;
+  const el    = document.getElementById('admin-user-list');
+  const start = page * PAGE_SIZE;
+  const slice = list.slice(0, start + PAGE_SIZE);
+
+  el.innerHTML = slice.map(u => buildUserCard(u)).join('') +
+    (list.length > slice.length
+      ? `<button class="btn btn--ghost btn--full mt-3" onclick="renderUserPage(_currentList, _currentPage+1)">আরো ${Math.min(PAGE_SIZE, list.length - slice.length)} জন দেখুন ↓</button>`
+      : '');
+}
+
+function buildUserCard(u) {
+  const rawPhone   = String(u.phone || '').trim();
+  const digitsOnly = rawPhone.replace(/\D/g, '');
+  const displayPhone = digitsOnly.startsWith('880') ? '0' + digitsOnly.slice(3)
+    : digitsOnly.startsWith('0') ? digitsOnly : digitsOnly ? '0' + digitsOnly : '';
+  const telLink = displayPhone ? '+880' + displayPhone.replace(/^0/, '') : '';
+  const wa = u.whatsapp_link || (displayPhone ? `https://wa.me/880${displayPhone.replace(/^0/, '')}` : '');
+
+  // Today's 5 waqt dots — from server waqtMap
+  const waqtMap   = u.waqtMap || {};
+  const todayDots = ['Fajr','Dhuhr','Asr','Maghrib','Isha'].map(w => {
+    const lg    = waqtMap[w];
+    const color = !lg ? '#3a3a3a' : lg.status==='1'?'#2D7A5A':lg.status==='2'?'#C9A84C':lg.status==='3'?'#4A6FA5':'#C0444A';
+    const icon  = !lg ? '○' : lg.status==='1'?'🕌':lg.status==='2'?'🏠':lg.status==='3'?'✈️':'✗';
+    return `<span title="${w}" style="font-size:${lg?'13px':'11px'};color:${color}">${icon}</span>`;
+  }).join('');
+
+  // 7-day trend from server string (e.g. "m.xmm.h")
+  const trend7 = u.trend7 || [];
+  const trendDots = trend7.map(t => {
+    const bg = t==='m'?'var(--emerald)':t==='x'?'var(--rose)':t==='h'?'var(--gold)':t==='t'?'#4A6FA5':'var(--bg-elevated)';
+    return `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${bg};margin-right:1px"></span>`;
+  }).join('');
+
+  const todayActive = Object.keys(waqtMap).length > 0;
+  const isGhost     = u.daysSince !== null && u.daysSince >= 3;
+  const statusBadge = isGhost
+    ? `<span style="font-size:0.65rem;background:rgba(192,68,74,0.12);color:var(--rose-l);border:1px solid var(--rose);border-radius:6px;padding:1px 6px">⚠️ ${u.daysSince} দিন গায়েব</span>`
+    : todayActive
+      ? `<span style="font-size:0.65rem;background:rgba(45,122,90,0.12);color:var(--emerald-l);border:1px solid var(--emerald);border-radius:6px;padding:1px 6px">✅ আজ সক্রিয়</span>`
+      : `<span style="font-size:0.65rem;background:var(--bg-elevated);color:var(--text-muted);border:1px solid var(--border-soft);border-radius:6px;padding:1px 6px">⏸ আজ লগ নেই</span>`;
+
+  return `
+  <div class="user-card" id="ucard-${u.user_id}" data-name="${escHtml(u.name).toLowerCase()}" data-active="${todayActive}" data-streak="${u.streak}">
+    <div class="user-card__avatar">👤</div>
+    <div class="user-card__info" style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <div class="user-card__name">${escHtml(u.name)}</div>
+        ${statusBadge}
+      </div>
+      <div class="user-card__phone">${displayPhone || '—'}</div>
+      <div style="display:flex;gap:5px;align-items:center;margin-top:4px">${todayDots}</div>
+      <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:0.62rem;color:var(--text-muted)">৭ দিন:</span>
+        ${trendDots}
+        <span style="font-size:0.65rem;color:var(--text-muted)">🔥${u.streak}</span>
+      </div>
+      <div class="attendance-bar-wrap" style="margin-top:5px">
+        <div style="display:flex;justify-content:space-between;font-size:0.67rem;color:var(--text-muted);margin-bottom:2px">
+          <span>🕌 ${u.mosque} &nbsp;🏠 ${u.home} &nbsp;✈️ ${u.travel} &nbsp;✗ ${u.missed}</span>
+          <span>${u.pct}%</span>
+        </div>
+        <div class="attendance-bar"><div class="attendance-bar__fill" style="width:${u.pct}%"></div></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-left:8px">
+      <span class="user-card__streak" style="font-family:var(--font-mono);font-size:0.7rem">${u.total} লগ</span>
+      <div class="user-card__actions">
+        ${telLink ? `<a class="action-btn action-btn--call" href="tel:${telLink}" title="কল: ${displayPhone}">📞</a>` : ''}
+        ${wa ? `<a class="action-btn action-btn--wa" href="${wa}" target="_blank" title="হোয়াটসঅ্যাপ">💬</a>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+  const today = new Date().toISOString().slice(0,10);
 
 function filterUsers(q) {
   const term = q.toLowerCase();
-  document.querySelectorAll('.user-card').forEach(card => {
-    card.style.display = card.dataset.name.includes(term) ? '' : 'none';
-  });
+  if (!term) { renderUserPage(_currentList, 0); return; }
+  const filtered = _currentList.filter(u => u.name.toLowerCase().includes(term));
+  renderUserPage(filtered, 0);
 }
+
+function rebuildCharts() { if (ALL_USERS_CACHE.length) loadAdminData(); }
 
 async function loadImamContactCard() {
   try {
@@ -3743,7 +3728,7 @@ function saveApiUrl() {
   for (let i = 0; i < url.length; i++) {
     _enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
   }
-  localStorage.setItem('https://script.google.com/macros/s/AKfycbxjK_EByTZPa-VvzACxxofuZdZpQ21S3S_66cznSVX3kFkTBrSJPFQmctbzt1KCm5SYtw/exec', btoa(_enc));
+  localStorage.setItem('https://script.google.com/macros/s/AKfycbyDqUj7vY49fpq563L11tibCMAzjSmRVHZ8no4vszHozzMpiaBpwJqIp5AAeYYZLA6Qqg/exec', btoa(_enc));
   localStorage.removeItem('salat_api_url'); // পুরনো plain URL মুছে দাও
   // Admin settings input blank করো — URL দেখানো যাবে না
   const el = document.getElementById('api-url-input');
