@@ -797,11 +797,23 @@ select.field__input { appearance:none; }
 @keyframes spin { to{transform:rotate(360deg)} }
 .loading-overlay {
   position:fixed; inset:0; z-index:200;
-  background:rgba(13,15,20,0.6);
-  backdrop-filter:blur(4px);
+  background:rgba(13,15,20,0.45);
+  backdrop-filter:blur(2px);
   display:none; place-items:center;
+  pointer-events:none; /* ব্যাকগ্রাউন্ড interaction ব্লক করবে না */
 }
-.loading-overlay.show { display:grid; }
+.loading-overlay.show { display:grid; pointer-events:all; }
+
+/* Top progress bar — ভারী overlay ছাড়া lightweight indicator */
+.top-progress {
+  position:fixed; top:0; left:0; right:0; height:3px; z-index:999;
+  background:linear-gradient(90deg,var(--gold),var(--emerald));
+  transform:scaleX(0); transform-origin:left;
+  transition:transform 0.3s ease;
+  display:none;
+}
+.top-progress.show { display:block; transform:scaleX(0.7); }
+.top-progress.done { transform:scaleX(1); opacity:0; transition:transform 0.2s,opacity 0.3s 0.2s; }
 
 /* ═══════════════════════════════════════════════════════════
    MISC UTILS
@@ -1082,10 +1094,13 @@ select.field__input { appearance:none; }
   <!-- ═══════════ LOADING OVERLAY ═══════════ -->
   <div class="loading-overlay" id="loadingOverlay">
     <div style="text-align:center">
-      <div class="spinner" style="width:40px;height:40px;border-width:3px;margin:0 auto 12px"></div>
-      <div style="color:var(--text-muted);font-size:0.82rem">লোড হচ্ছে…</div>
+      <div class="spinner" style="width:36px;height:36px;border-width:3px;margin:0 auto 10px"></div>
+      <div style="color:var(--text-muted);font-size:0.8rem" id="loading-text">লোড হচ্ছে…</div>
     </div>
   </div>
+
+  <!-- Top progress bar — হালকা indicator -->
+  <div class="top-progress" id="topProgress"></div>
 
   <!-- ═══════════ TOAST ═══════════ -->
   <div id="toast-wrap"></div>
@@ -1102,34 +1117,46 @@ select.field__input { appearance:none; }
         <div class="auth-logo__sub">নামাজ পর্যবেক্ষণ সিস্টেম</div>
       </div>
 
-      <div class="card card--gold">
-        <div class="field">
-          <label class="field__label">আপনার নাম</label>
-          <input class="field__input" type="text" id="auth-name" placeholder="আপনার পুরো নাম লিখুন" autocomplete="name"/>
+      <!-- ফিরে আসা ইউজারের জন্য সহজ লগইন -->
+      <div id="auth-returning" style="display:none">
+        <div class="card card--gold" style="text-align:center;padding:24px">
+          <div style="font-size:36px;margin-bottom:10px">👋</div>
+          <div style="font-weight:700;font-size:1.1rem" id="auth-return-name">আবার স্বাগতম!</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px" id="auth-return-phone"></div>
         </div>
-        <div class="field" style="margin-bottom:0">
-          <label class="field__label">মোবাইল নম্বর</label>
-          <div class="phone-prefix">
-            <span class="phone-prefix__code">🇧🇩 +880</span>
-            <input class="field__input" type="tel" id="auth-phone" placeholder="01XXXXXXXXX" maxlength="11" inputmode="numeric"/>
-          </div>
-        </div>
-        <div class="auth-divider">or</div>
-        <div class="field" style="margin-bottom:0">
-          <label class="field__label">হোয়াটসঅ্যাপ নম্বর (ঐচ্ছিক)</label>
-          <div class="phone-prefix">
-            <span class="phone-prefix__code">🇧🇩 +880</span>
-            <input class="field__input" type="tel" id="auth-wa" placeholder="01XXXXXXXXX" maxlength="11" inputmode="numeric"/>
-          </div>
-          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">হোয়াটসঅ্যাপ নম্বর দিন — ইমাম যোগাযোগ করতে পারবেন</div>
-        </div>
+        <button class="btn btn--primary btn--full mt-4" onclick="resumeSession()">
+          ✅ একই অ্যাকাউন্টে প্রবেশ করুন
+        </button>
+        <button class="btn btn--ghost btn--full mt-2" style="font-size:0.82rem" onclick="showNewLogin()">
+          অন্য নম্বরে লগইন করুন
+        </button>
       </div>
 
-      <button class="btn btn--primary btn--full mt-4" id="btn-register" onclick="handleAuth()">
-        <span>প্রবেশ করুন →</span>
-      </button>
-      <div class="text-center mt-2">
-        <span class="text-muted">আগে রেজিস্ট্রেশন করা থাকলে শুধু ফোন নম্বর দিন।</span>
+      <!-- নতুন / অন্য নম্বরে লগইন -->
+      <div id="auth-new">
+        <div class="card card--gold">
+          <!-- ফোন নম্বর — সবার আগে -->
+          <div class="field">
+            <label class="field__label">মোবাইল নম্বর <span style="color:var(--rose-l)">*</span></label>
+            <div class="phone-prefix">
+              <span class="phone-prefix__code">🇧🇩 +880</span>
+              <input class="field__input" type="tel" id="auth-phone" placeholder="01XXXXXXXXX"
+                     maxlength="11" inputmode="numeric"
+                     oninput="onPhoneInput(this.value)"/>
+            </div>
+            <div style="font-size:0.7rem;margin-top:5px" id="phone-check-msg"></div>
+          </div>
+          <!-- নাম — শুধু নতুন ইউজারের জন্য দেখাবে -->
+          <div class="field" id="auth-name-wrap" style="display:none;margin-bottom:0">
+            <label class="field__label">আপনার নাম <span style="color:var(--rose-l)">*</span></label>
+            <input class="field__input" type="text" id="auth-name" placeholder="আপনার পুরো নাম লিখুন" autocomplete="name"/>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">প্রথমবার রেজিস্ট্রেশনের জন্য নাম দিন</div>
+          </div>
+        </div>
+
+        <button class="btn btn--primary btn--full mt-4" id="btn-auth" onclick="handleAuth()">
+          <span>প্রবেশ করুন →</span>
+        </button>
       </div>
 
       <div style="margin-top:28px;text-align:center">
@@ -1603,6 +1630,7 @@ select.field__input { appearance:none; }
           <!-- Tabs -->
           <div class="tab-bar" style="overflow-x:auto;flex-wrap:nowrap">
             <button class="tab-btn active" onclick="switchAdminTab('members', this)" style="white-space:nowrap">👤 সদস্য</button>
+            <button class="tab-btn" onclick="switchAdminTab('user-detail', this)" style="white-space:nowrap" id="tab-btn-user-detail">🔍 বিস্তারিত</button>
             <button class="tab-btn" onclick="switchAdminTab('charts', this)" style="white-space:nowrap">📊 চার্ট</button>
             <button class="tab-btn" onclick="switchAdminTab('reports', this)" style="white-space:nowrap">📋 রিপোর্ট</button>
             <button class="tab-btn" onclick="switchAdminTab('qa', this)" style="white-space:nowrap">💬 প্রশ্নোত্তর</button>
@@ -1651,6 +1679,19 @@ select.field__input { appearance:none; }
           </div>
 
           <!-- Charts tab -->
+          <!-- User Detail tab -->
+          <div class="tab-panel" id="tab-user-detail">
+            <div class="card mb-3" style="padding:16px">
+              <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px">সদস্য ট্যাব থেকে নাম ক্লিক করলে এখানে বিস্তারিত দেখাবে</div>
+              <div id="user-detail-content">
+                <div class="empty-state" style="padding:30px">
+                  <span class="emoji">👆</span>
+                  সদস্য ট্যাবে গিয়ে যেকোনো সদস্যের নামে ক্লিক করুন
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="tab-panel" id="tab-charts">
             <!-- সারসংক্ষেপ কার্ড -->
             <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px">
@@ -1905,11 +1946,11 @@ function _decodeUrl() {
 }
 
 // Runtime-এ URL সেট হয় — source code-এ সরাসরি দেখা যায় না
-let API_URL = localStorage.getItem('https://script.google.com/macros/s/AKfycbyDqUj7vY49fpq563L11tibCMAzjSmRVHZ8no4vszHozzMpiaBpwJqIp5AAeYYZLA6Qqg/exec')
+let API_URL = localStorage.getItem('https://script.google.com/macros/s/AKfycbyASmwekH6fv1bHVq6ijDtDUg40MYtrbYbtmiI17KgzURAMEyXLf6jYcAUC7Kr6PiEXpQ/exec')
   ? (function(){
       try {
         const _key = 'salat_monitor_secure_2024';
-        const _enc = atob(localStorage.getItem('https://script.google.com/macros/s/AKfycbyDqUj7vY49fpq563L11tibCMAzjSmRVHZ8no4vszHozzMpiaBpwJqIp5AAeYYZLA6Qqg/exec'));
+        const _enc = atob(localStorage.getItem('https://script.google.com/macros/s/AKfycbyASmwekH6fv1bHVq6ijDtDUg40MYtrbYbtmiI17KgzURAMEyXLf6jYcAUC7Kr6PiEXpQ/exec'));
         let _dec = '';
         for (let i = 0; i < _enc.length; i++) {
           _dec += String.fromCharCode(_enc.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
@@ -2061,8 +2102,29 @@ function toast(msg, type='ok') {
   setTimeout(() => el.remove(), 2800);
 }
 
-function loading(show) {
-  document.getElementById('loadingOverlay').classList.toggle('show', show);
+let _loadingCount = 0;
+function loading(show, heavy) {
+  if (show) {
+    _loadingCount++;
+    if (heavy) {
+      // ভারী load — full overlay
+      document.getElementById('loadingOverlay').classList.add('show');
+    } else {
+      // হালকা load — শুধু top bar
+      const bar = document.getElementById('topProgress');
+      if (bar) { bar.classList.remove('done'); bar.classList.add('show'); }
+    }
+  } else {
+    _loadingCount = Math.max(0, _loadingCount - 1);
+    if (_loadingCount === 0) {
+      document.getElementById('loadingOverlay').classList.remove('show');
+      const bar = document.getElementById('topProgress');
+      if (bar) {
+        bar.classList.add('done');
+        setTimeout(() => { bar.classList.remove('show','done'); }, 500);
+      }
+    }
+  }
 }
 
 function fmtDate(iso) {
@@ -2495,46 +2557,97 @@ function applyTheme() {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  AUTH
+//  AUTH — smart login
 // ═══════════════════════════════════════════════════════════
-async function handleAuth() {
-  const name  = document.getElementById('auth-name').value.trim();
-  const phone = document.getElementById('auth-phone').value.trim();
-  const waRaw = document.getElementById('auth-wa').value.trim();
 
+let _phoneCheckTimer = null;
+let _foundUser = null; // server থেকে পাওয়া existing user
+
+function onPhoneInput(val) {
+  const msg = document.getElementById('phone-check-msg');
+  const nameWrap = document.getElementById('auth-name-wrap');
+  _foundUser = null;
+  if (val.length < 10) {
+    msg.textContent = ''; msg.style.color = '';
+    nameWrap.style.display = 'none';
+    return;
+  }
+  msg.textContent = '🔍 নম্বর যাচাই করা হচ্ছে…';
+  msg.style.color = 'var(--text-muted)';
+  clearTimeout(_phoneCheckTimer);
+  _phoneCheckTimer = setTimeout(() => checkPhoneExists(val), 500);
+}
+
+async function checkPhoneExists(phone) {
+  const msg = document.getElementById('phone-check-msg');
+  const nameWrap = document.getElementById('auth-name-wrap');
+  if (!API_URL) { msg.textContent = '⚠️ API URL সেট নেই'; return; }
+  try {
+    const res = await apiGet({ action: 'getUserByPhone', phone });
+    if (res.success && res.data) {
+      _foundUser = res.data;
+      msg.innerHTML = `✅ <strong>${escHtml(res.data.name)}</strong> — পরিচিত নম্বর, সরাসরি ঢুকুন`;
+      msg.style.color = 'var(--emerald-l)';
+      nameWrap.style.display = 'none';
+      document.getElementById('btn-auth').textContent = `✅ ${res.data.name} হিসেবে প্রবেশ →`;
+    } else {
+      _foundUser = null;
+      msg.textContent = '🆕 নতুন নম্বর — নাম দিয়ে রেজিস্ট্রেশন করুন';
+      msg.style.color = 'var(--gold)';
+      nameWrap.style.display = 'block';
+      document.getElementById('btn-auth').textContent = 'রেজিস্ট্রেশন করুন →';
+    }
+  } catch {
+    msg.textContent = '⚠️ সংযোগ সমস্যা';
+    msg.style.color = 'var(--rose-l)';
+  }
+}
+
+async function handleAuth() {
+  const phone = document.getElementById('auth-phone').value.trim();
   if (!phone || phone.length < 10) { toast('সঠিক ফোন নম্বর দিন', 'err'); return; }
 
-  // WhatsApp number → wa.me link auto-convert
-  let wa = '';
-  if (waRaw) {
-    const waDigits = waRaw.replace(/\D/g,'');
-    if (waDigits.startsWith('880'))   wa = `https://wa.me/${waDigits}`;
-    else if (waDigits.startsWith('0')) wa = `https://wa.me/880${waDigits.slice(1)}`;
-    else if (waDigits.length >= 10)   wa = `https://wa.me/880${waDigits}`;
-    else wa = waRaw;
+  // পরিচিত নম্বর — সরাসরি লগইন
+  if (_foundUser) {
+    saveSession({ ..._foundUser, is_admin: false });
+    toast(`স্বাগতম ফিরে এলেন, ${_foundUser.name}! 👋`, 'ok');
+    enterApp(); return;
   }
+
+  // নতুন ইউজার — নাম দরকার
+  const name = document.getElementById('auth-name').value.trim();
+  if (!name) { toast('নাম দিন', 'err'); return; }
 
   loading(true);
   try {
-    const check = await apiGet({ action:'getUsers' });
-    if (check.success) {
-      const existing = check.data.find(u => u.phone === phone || u.phone === '0'+phone);
-      if (existing) {
-        // পুরনো সেশন ডেটা মুছে নতুন করে সার্ভার থেকে লোড করো
-        const freshSession = { ...existing, is_admin: false };
-        saveSession(freshSession);
-        toast(`স্বাগতম ফিরে এলেন, ${existing.name}! আপনার পুরনো ডেটা লোড হচ্ছে…`, 'ok');
-        enterApp(); return;
-      }
+    // Duplicate phone check
+    const checkRes = await apiGet({ action: 'getUserByPhone', phone });
+    if (checkRes.success && checkRes.data) {
+      // এই নম্বরে আগে থেকে account আছে
+      saveSession({ ...checkRes.data, is_admin: false });
+      toast(`এই নম্বরে অ্যাকাউন্ট আছে। ${checkRes.data.name} হিসেবে লগইন হলো।`, 'ok');
+      enterApp(); return;
     }
-    if (!name) { loading(false); toast('রেজিস্ট্রেশনের জন্য নাম দিন', 'err'); return; }
-    const res = await apiPost({ action:'registerUser', name, phone, whatsapp_link:wa });
-    if (!res.success) { toast(res.message || 'Registration failed', 'err'); return; }
+    const res = await apiPost({ action:'registerUser', name, phone, whatsapp_link:'' });
+    if (!res.success) { toast(res.message || 'রেজিস্ট্রেশন ব্যর্থ', 'err'); return; }
     saveSession({ ...res.data, is_admin:false });
     toast(`স্বাগতম, ${name}! ✨`, 'ok');
     enterApp();
   } catch { toast('সংযোগ ব্যর্থ। নেটওয়ার্ক চেক করুন।', 'err'); }
-  finally   { loading(false); }
+  finally { loading(false); }
+}
+
+// Returning user — session থেকে সরাসরি
+function resumeSession() {
+  if (!SESSION) return;
+  enterApp();
+}
+
+function showNewLogin() {
+  document.getElementById('auth-returning').style.display = 'none';
+  document.getElementById('auth-new').style.display = 'block';
+  SESSION = null;
+  localStorage.removeItem('salat_session');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2568,7 +2681,7 @@ async function unlockAdminStandalone() {
     let enc = '';
     for (let i = 0; i < url.length; i++)
       enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
-    localStorage.setItem('https://script.google.com/macros/s/AKfycbyDqUj7vY49fpq563L11tibCMAzjSmRVHZ8no4vszHozzMpiaBpwJqIp5AAeYYZLA6Qqg/exec', btoa(enc));
+    localStorage.setItem('https://script.google.com/macros/s/AKfycbyASmwekH6fv1bHVq6ijDtDUg40MYtrbYbtmiI17KgzURAMEyXLf6jYcAUC7Kr6PiEXpQ/exec', btoa(enc));
     API_URL = url;
   }
 
@@ -2659,7 +2772,7 @@ function saveQuickUrl() {
   let enc = '';
   for (let i = 0; i < url.length; i++)
     enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
-  localStorage.setItem('https://script.google.com/macros/s/AKfycbyDqUj7vY49fpq563L11tibCMAzjSmRVHZ8no4vszHozzMpiaBpwJqIp5AAeYYZLA6Qqg/exec', btoa(enc));
+  localStorage.setItem('https://script.google.com/macros/s/AKfycbyASmwekH6fv1bHVq6ijDtDUg40MYtrbYbtmiI17KgzURAMEyXLf6jYcAUC7Kr6PiEXpQ/exec', btoa(enc));
   API_URL = url;
   const box = document.getElementById('admin-url-quick');
   if (box) box.style.display = 'none';
@@ -3061,9 +3174,17 @@ async function submitReport() {
   if (!desc)  { toast('বিবরণ লিখুন', 'err'); return; }
   loading(true);
   try {
-    const res = await apiPost({ action:'submitSocialReport', issue_type:type, description:desc });
+    // user_id পাঠানো হচ্ছে না — সম্পূর্ণ anonymous
+    // is_public:true — সবাই দেখতে পাবে, কিন্তু নাম/পরিচয় ছাড়া
+    const res = await apiPost({
+      action: 'submitSocialReport',
+      issue_type: type,
+      description: desc,
+      is_anonymous: true,
+      is_public: true,
+    });
     if (!res.success) { toast(res.message, 'err'); return; }
-    toast('✓ রিপোর্ট গোপনে জমা দেওয়া হয়েছে', 'ok');
+    toast('✓ সমস্যা গোপনে জমা দেওয়া হয়েছে। ইমাম পড়বেন।', 'ok');
     document.getElementById('report-type').value = '';
     document.getElementById('report-desc').value = '';
   } catch { toast('জমা দিতে ব্যর্থ হয়েছে', 'err'); }
@@ -3078,7 +3199,13 @@ async function submitChatQuestion() {
   if (!text) { toast('আগে প্রশ্ন লিখুন', 'err'); return; }
   loading(true);
   try {
-    const res = await apiPost({ action:'submitChatQuestion', user_id:SESSION.user_id, question:text });
+    // is_public:true — সবাই দেখতে পাবে, নাম সহ
+    const res = await apiPost({
+      action: 'submitChatQuestion',
+      user_id: SESSION.user_id,
+      question: text,
+      is_public: true,
+    });
     if (!res.success) { toast(res.message, 'err'); return; }
     toast('✓ প্রশ্ন ইমামের কাছে পাঠানো হয়েছে', 'ok');
     document.getElementById('chat-input').value = '';
@@ -3146,7 +3273,7 @@ async function loadPublicQA() {
   } catch(e) { console.error('loadPublicQA:', e); }
 }
 async function loadAdminData() {
-  loading(true);
+  loading(true, true); // ভারী — full overlay
   try {
     // একটাই API call — সার্ভারে সব aggregate করে আসে
     const res = await apiGet({ action: 'getAdminStats' });
@@ -3400,6 +3527,99 @@ const PAGE_SIZE = 30; // একসাথে ৩০ জন render, বাকি�
 let _currentPage = 0;
 let _currentList = [];
 
+// ═══════════════════════════════════════════════════════════
+//  USER DETAIL VIEW
+// ═══════════════════════════════════════════════════════════
+async function openUserDetail(userId) {
+  const detailBtn = document.getElementById('tab-btn-user-detail');
+  if (detailBtn) switchAdminTab('user-detail', detailBtn);
+  const cont = document.getElementById('user-detail-content');
+  cont.innerHTML = `<div style="text-align:center;padding:30px"><div class="spinner" style="width:30px;height:30px;border-width:3px;margin:0 auto 10px"></div>লোড হচ্ছে…</div>`;
+  try {
+    const [statsRes, logsRes] = await Promise.all([
+      apiGet({ action:'getAdminStats' }),
+      apiGet({ action:'getSalahLogsPaged', user_id:userId, days:60 }),
+    ]);
+    const user = (statsRes.success ? statsRes.data.userSummary : []).find(u => u.user_id === userId);
+    const logs = logsRes.success ? logsRes.data : [];
+    if (!user) { cont.innerHTML = '<div class="empty-state">সদস্য পাওয়া যায়নি</div>'; return; }
+
+    const byDate = {};
+    logs.forEach(l => {
+      const d = String(l.date).slice(0,10);
+      if (!byDate[d]) byDate[d] = {};
+      byDate[d][l.waqt] = String(l.status);
+    });
+    const dates = Object.keys(byDate).sort().reverse().slice(0, 30);
+    const waqts = ['Fajr','Dhuhr','Asr','Maghrib','Isha'];
+    const wBN   = {'Fajr':'ফজর','Dhuhr':'যোহর','Asr':'আসর','Maghrib':'মাগরিব','Isha':'এশা'};
+    const sIcon = s => !s?'—':s==='1'?'🕌':s==='2'?'🏠':s==='3'?'✈️':'✗';
+    const sBg   = s => !s?'transparent':s==='1'?'rgba(45,122,90,0.15)':s==='2'?'rgba(201,168,76,0.12)':s==='3'?'rgba(74,111,165,0.15)':'rgba(192,68,74,0.12)';
+    const sClr  = s => !s?'var(--text-muted)':s==='1'?'var(--emerald-l)':s==='2'?'#C9A84C':s==='3'?'#7ab3e0':'var(--rose-l)';
+
+    const rawPhone   = String(user.phone || '').replace(/\D/g,'');
+    const displayPhone = rawPhone.startsWith('880') ? '0'+rawPhone.slice(3) : rawPhone;
+    const telLink = displayPhone ? '+880'+displayPhone.replace(/^0/,'') : '';
+    const wa = user.whatsapp_link || (displayPhone ? `https://wa.me/880${displayPhone.replace(/^0/,'')}` : '');
+
+    cont.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;padding:14px 0 18px;border-bottom:1px solid var(--border-soft)">
+        <div style="width:48px;height:48px;border-radius:50%;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;font-size:22px">👤</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:1.05rem">${escHtml(user.name)}</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);font-family:var(--font-mono)">${displayPhone||'—'}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          ${telLink?`<a class="action-btn action-btn--call" href="tel:${telLink}">📞</a>`:''}
+          ${wa?`<a class="action-btn action-btn--wa" href="${wa}" target="_blank">💬</a>`:''}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0">
+        <div style="text-align:center;padding:10px 6px;background:var(--bg-elevated);border-radius:10px"><div style="font-size:1.3rem;font-weight:700;color:var(--emerald-l)">${user.mosque}</div><div style="font-size:0.65rem;color:var(--text-muted)">🕌 মসজিদ</div></div>
+        <div style="text-align:center;padding:10px 6px;background:var(--bg-elevated);border-radius:10px"><div style="font-size:1.3rem;font-weight:700;color:#C9A84C">${user.home}</div><div style="font-size:0.65rem;color:var(--text-muted)">🏠 বাড়ি</div></div>
+        <div style="text-align:center;padding:10px 6px;background:var(--bg-elevated);border-radius:10px"><div style="font-size:1.3rem;font-weight:700;color:var(--rose-l)">${user.missed}</div><div style="font-size:0.65rem;color:var(--text-muted)">✗ মিস</div></div>
+        <div style="text-align:center;padding:10px 6px;background:var(--bg-elevated);border-radius:10px"><div style="font-size:1.3rem;font-weight:700;color:var(--gold)">${user.pct}%</div><div style="font-size:0.65rem;color:var(--text-muted)">মসজিদ %</div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <span class="badge badge--green">🔥 স্ট্রিক: ${user.streak} দিন</span>
+        ${user.daysSince>=3?`<span class="badge badge--red">⚠️ ${user.daysSince} দিন লগ নেই</span>`:''}
+        <span class="badge badge--muted">মোট: ${user.total} লগ</span>
+      </div>
+      <div style="font-weight:700;font-size:0.88rem;margin-bottom:8px">📅 দৈনিক নামাজ (শেষ ৩০ দিন)</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:0.72rem">
+        <span>🕌 মসজিদ</span><span>🏠 বাড়ি</span><span>✈️ সফর</span>
+        <span style="color:var(--rose-l)">✗ মিস</span><span style="color:var(--text-muted)">— লগ নেই</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:0.82rem;min-width:340px">
+          <thead><tr style="background:var(--bg-elevated)">
+            <th style="padding:8px 10px;text-align:left;font-size:0.72rem;color:var(--text-muted);border-bottom:1px solid var(--border)">তারিখ</th>
+            ${waqts.map(w=>`<th style="padding:8px 6px;text-align:center;font-size:0.72rem;color:var(--text-muted);border-bottom:1px solid var(--border)">${wBN[w]}</th>`).join('')}
+            <th style="padding:8px 6px;text-align:center;font-size:0.72rem;color:var(--text-muted);border-bottom:1px solid var(--border)">মসজিদ</th>
+          </tr></thead>
+          <tbody>
+            ${dates.length ? dates.map(d => {
+              const dL = byDate[d]||{};
+              const mc = waqts.filter(w=>dL[w]==='1').length;
+              const hm = waqts.some(w=>dL[w]==='0');
+              const rb = mc===5?'rgba(45,122,90,0.06)':hm?'rgba(192,68,74,0.04)':'transparent';
+              const dn = ['রবি','সোম','মঙ্গল','বুধ','বৃহঃ','শুক্র','শনি'][new Date(d).getDay()];
+              return `<tr style="background:${rb};border-bottom:1px solid rgba(255,255,255,0.03)">
+                <td style="padding:7px 10px;white-space:nowrap">${d.slice(8)}-${d.slice(5,7)}<br><span style="font-size:0.65rem;color:var(--text-muted)">${dn}</span></td>
+                ${waqts.map(w=>`<td style="padding:7px 6px;text-align:center;background:${sBg(dL[w])};color:${sClr(dL[w])};font-size:${dL[w]?'14px':'12px'}">${sIcon(dL[w])}</td>`).join('')}
+                <td style="padding:7px 6px;text-align:center;font-weight:700;color:${mc===5?'var(--emerald-l)':mc>=3?'var(--gold)':'var(--rose-l)'}">${mc}/৫</td>
+              </tr>`;
+            }).join('') : `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted)">কোনো লগ নেই</td></tr>`}
+          </tbody>
+        </table>
+      </div>`;
+  } catch(e) {
+    cont.innerHTML = `<div class="empty-state"><span class="emoji">⚠️</span>লোড ব্যর্থ হয়েছে</div>`;
+    console.error(e);
+  }
+}
+
+
 function renderUserPage(list, page) {
   _currentList = list;
   _currentPage = page;
@@ -3450,7 +3670,7 @@ function buildUserCard(u) {
     <div class="user-card__avatar">👤</div>
     <div class="user-card__info" style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        <div class="user-card__name">${escHtml(u.name)}</div>
+        <div class="user-card__name" style="cursor:pointer;text-decoration:underline dotted" onclick="openUserDetail('${u.user_id}')" title="বিস্তারিত দেখুন">${escHtml(u.name)}</div>
         ${statusBadge}
       </div>
       <div class="user-card__phone">${displayPhone || '—'}</div>
@@ -3728,7 +3948,7 @@ function saveApiUrl() {
   for (let i = 0; i < url.length; i++) {
     _enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
   }
-  localStorage.setItem('https://script.google.com/macros/s/AKfycbyDqUj7vY49fpq563L11tibCMAzjSmRVHZ8no4vszHozzMpiaBpwJqIp5AAeYYZLA6Qqg/exec', btoa(_enc));
+  localStorage.setItem('https://script.google.com/macros/s/AKfycbyASmwekH6fv1bHVq6ijDtDUg40MYtrbYbtmiI17KgzURAMEyXLf6jYcAUC7Kr6PiEXpQ/exec', btoa(_enc));
   localStorage.removeItem('salat_api_url'); // পুরনো plain URL মুছে দাও
   // Admin settings input blank করো — URL দেখানো যাবে না
   const el = document.getElementById('api-url-input');
@@ -3803,8 +4023,22 @@ async function changeUserPin() {
   loadSession();
   updateStoredHashDisplay();
 
-  if (SESSION) {
-    // session আছে → সরাসরি app এ ঢোকো
+  if (SESSION && !SESSION.is_admin) {
+    // session আছে — returning user card দেখাই
+    const retEl   = document.getElementById('auth-returning');
+    const newEl   = document.getElementById('auth-new');
+    const nameEl  = document.getElementById('auth-return-name');
+    const phoneEl = document.getElementById('auth-return-phone');
+    if (retEl && nameEl && phoneEl) {
+      nameEl.textContent  = `স্বাগতম, ${SESSION.name}! 👋`;
+      phoneEl.textContent = SESSION.phone || '';
+      retEl.style.display = 'block';
+      if (newEl) newEl.style.display = 'none';
+    } else {
+      // fallback
+      enterApp();
+    }
+  } else if (SESSION && SESSION.is_admin) {
     enterApp();
   }
 })();
