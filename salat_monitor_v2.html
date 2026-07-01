@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="bn" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Salat Monitor v2 — مراقبة الصلاة</title>
-<link rel="manifest" href="#"/>
+<title>চল সালাতে — সবাই মিলে, জান্নাতের পথে</title>
+<meta name="application-name" content="চল সালাতে"/>
+<meta name="apple-mobile-web-app-title" content="চল সালাতে"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="description" content="সবাই মিলে, জান্নাতের পথে — নামাজ ও আমল ট্র্যাকার"/>
 <meta name="theme-color" content="#0D0F14"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -120,9 +124,14 @@ body::before {
   font-size:18px;
 }
 .topnav__title {
-  font-family: var(--font-display);
-  font-size:1.2rem;
-  color: var(--gold-light);
+  font-family: var(--font-body);
+  font-size:1.15rem;
+  font-weight:800;
+  letter-spacing:-0.01em;
+  background:linear-gradient(135deg, #e8c46a, #3DA876);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
   line-height:1.1;
 }
 .topnav__sub { font-size:0.65rem; color:var(--text-muted); letter-spacing:0.06em; text-transform:uppercase; }
@@ -298,22 +307,38 @@ select.field__input { appearance:none; }
   text-align:center; margin-bottom:32px;
 }
 .auth-logo__ring {
-  width:80px; height:80px;
+  width:88px; height:88px;
   border-radius:50%;
-  background:linear-gradient(135deg,rgba(201,168,76,0.3),rgba(201,168,76,0.05));
-  border:2px solid rgba(201,168,76,0.4);
+  background:linear-gradient(135deg,rgba(201,168,76,0.25),rgba(45,122,90,0.12));
+  border:2px solid rgba(201,168,76,0.45);
   display:flex; align-items:center; justify-content:center;
-  font-size:36px; margin:0 auto 14px;
-  box-shadow:0 0 40px rgba(201,168,76,0.15);
+  font-size:38px; margin:0 auto 18px;
+  box-shadow:0 0 48px rgba(201,168,76,0.18), 0 0 0 8px rgba(201,168,76,0.05);
+  animation: logoPulse 3s ease-in-out infinite;
 }
-.auth-logo__arabic {
-  font-family:var(--font-display);
-  font-size:2.2rem; color:var(--gold-light);
-  display:block; line-height:1;
+@keyframes logoPulse {
+  0%,100% { box-shadow:0 0 48px rgba(201,168,76,0.18), 0 0 0 8px rgba(201,168,76,0.05); }
+  50%      { box-shadow:0 0 64px rgba(201,168,76,0.28), 0 0 0 14px rgba(201,168,76,0.08); }
 }
-.auth-logo__sub {
-  font-size:0.75rem; color:var(--text-muted);
-  letter-spacing:0.2em; text-transform:uppercase; margin-top:4px;
+.auth-logo__main-title {
+  font-size:clamp(2rem,8vw,2.8rem);
+  font-weight:900;
+  letter-spacing:-0.02em;
+  line-height:1;
+  background:linear-gradient(135deg, #e8c46a 0%, #C9A84C 35%, #3DA876 70%, #2D7A5A 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  display:block;
+  margin-bottom:6px;
+  font-family:var(--font-body);
+}
+.auth-logo__subtitle {
+  font-size:0.82rem;
+  color:var(--text-muted);
+  letter-spacing:0.12em;
+  font-weight:500;
+  opacity:0.85;
 }
 .auth-divider {
   display:flex; align-items:center; gap:12px;
@@ -1113,8 +1138,8 @@ select.field__input { appearance:none; }
     <div class="auth-wrap">
       <div class="auth-logo">
         <div class="auth-logo__ring">🕌</div>
-        <span class="auth-logo__arabic">مراقبة الصلاة</span>
-        <div class="auth-logo__sub">নামাজ পর্যবেক্ষণ সিস্টেম</div>
+        <span class="auth-logo__main-title">চল সালাতে</span>
+        <div class="auth-logo__subtitle">সবাই মিলে, জান্নাতের পথে</div>
       </div>
 
       <!-- ফিরে আসা ইউজারের জন্য সহজ লগইন -->
@@ -1147,16 +1172,20 @@ select.field__input { appearance:none; }
             <div style="font-size:0.7rem;margin-top:5px" id="phone-check-msg"></div>
           </div>
           <!-- নাম — শুধু নতুন ইউজারের জন্য দেখাবে -->
-          <div class="field" id="auth-name-wrap" style="display:none;margin-bottom:0">
+          <div class="field" id="auth-name-wrap" style="margin-bottom:0">
             <label class="field__label">আপনার নাম <span style="color:var(--rose-l)">*</span></label>
             <input class="field__input" type="text" id="auth-name" placeholder="আপনার পুরো নাম লিখুন" autocomplete="name"/>
-            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">প্রথমবার রেজিস্ট্রেশনের জন্য নাম দিন</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">নতুন হলে নাম দিন · পরিচিত নম্বর হলে স্বয়ংক্রিয় লগইন হবে</div>
           </div>
         </div>
 
         <button class="btn btn--primary btn--full mt-4" id="btn-auth" onclick="handleAuth()">
           <span>প্রবেশ করুন →</span>
         </button>
+        <!-- API URL না থাকলে hint দেখাবে -->
+        <div id="auth-url-hint" style="display:none;margin-top:10px;padding:10px 14px;background:rgba(192,68,74,0.08);border:1px solid rgba(192,68,74,0.25);border-radius:10px;font-size:0.78rem;color:var(--rose-l);text-align:center">
+          ⚠️ সিস্টেম এখনো সেটআপ হয়নি। ইমামের সাথে যোগাযোগ করুন।
+        </div>
       </div>
 
       <div style="margin-top:28px;text-align:center">
@@ -1174,7 +1203,9 @@ select.field__input { appearance:none; }
       <button class="btn btn--ghost btn--sm" onclick="backFromAdminGate()" style="margin-bottom:24px">← সাধারণ লগইনে ফিরুন</button>
       <div style="text-align:center;margin-bottom:28px">
         <div style="font-size:52px;margin-bottom:12px">🔐</div>
-        <div style="font-size:1.4rem;font-weight:700;color:var(--text-primary)">ইমাম / অ্যাডমিন প্যানেল</div>
+        <div style="font-size:1.4rem;font-weight:900;letter-spacing:-0.01em;background:linear-gradient(135deg,#e8c46a,#3DA876);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">চল সালাতে</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;margin-bottom:10px">সবাই মিলে, জান্নাতের পথে</div>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary)">ইমাম / অ্যাডমিন প্যানেল</div>
         <div style="font-size:0.8rem;color:var(--text-muted);margin-top:6px">শুধুমাত্র অনুমোদিত ব্যক্তির জন্য</div>
       </div>
       <div class="card card--gold">
@@ -1232,13 +1263,13 @@ select.field__input { appearance:none; }
       <div class="topnav__brand">
         <div class="topnav__icon">🕌</div>
         <div>
-          <div class="topnav__title">مراقبة الصلاة</div>
-          <div class="topnav__sub">নামাজ মনিটর</div>
+          <div class="topnav__title">চল সালাতে</div>
+          <div class="topnav__sub">সবাই মিলে, জান্নাতের পথে</div>
         </div>
       </div>
       <div class="topnav__actions">
         <button class="btn-icon" onclick="toggleTheme()" title="থিম পরিবর্তন" id="theme-btn">🌙</button>
-        <button class="btn-icon" onclick="logout()" title="লগ আউট">🚪</button>
+        <button class="btn-icon" onclick="confirmLogout()" title="লগ আউট">🚪</button>
       </div>
     </nav>
 
@@ -1531,7 +1562,7 @@ select.field__input { appearance:none; }
             <div>নাম: <strong id="sp-name" style="color:var(--text-primary)">—</strong></div>
             <div>ফোন: <strong id="sp-phone" style="color:var(--text-primary)">—</strong></div>
           </div>
-          <button class="btn btn--danger btn--sm btn--full mt-4" onclick="logout()">🚪 লগ আউট করুন</button>
+          <button class="btn btn--danger btn--sm btn--full mt-4" onclick="confirmLogout()">🚪 লগ আউট করুন</button>
         </div>
 
         <!-- পাসওয়ার্ড / পিন রিসেট -->
@@ -1574,24 +1605,51 @@ select.field__input { appearance:none; }
     <div id="screen-admin" class="screen">
       <div class="container--wide">
 
-        <!-- Gate (password protected with hashing) -->
+        <!-- Gate (password protected) -->
         <div id="admin-gate" class="admin-gate">
-          <!-- সাধারণ user দের জন্য back button -->
           <div style="text-align:left;margin-bottom:16px" id="admin-gate-back-wrap">
             <button class="btn btn--ghost btn--sm" onclick="switchScreen('home', document.getElementById('nav-home'))">← ফিরে যান</button>
           </div>
           <div class="admin-gate__icon">🔐</div>
           <div class="section-hd__title mb-4" style="margin-bottom:16px">ইমাম / অ্যাডমিন প্যানেল</div>
-          <div class="card" style="max-width:340px;margin:0 auto">
+          <div class="card" style="max-width:360px;margin:0 auto">
+
+            <!-- API URL -->
             <div class="field">
-              <label class="field__label">অ্যাডমিন পিন</label>
+              <label class="field__label">Apps Script URL <span id="inner-url-icon">⚠️</span></label>
+              <input class="field__input" type="url" id="admin-url-inner"
+                     placeholder="https://script.google.com/macros/s/.../exec"
+                     style="font-size:0.75rem" oninput="onInnerUrlInput(this.value)"/>
+              <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px" id="inner-url-text">Apps Script Web App URL বসান</div>
+            </div>
+
+            <!-- নাম -->
+            <div class="field">
+              <label class="field__label">আপনার নাম</label>
+              <input class="field__input" type="text" id="admin-name-inner"
+                     placeholder="ইমামের নাম" autocomplete="name"/>
+            </div>
+
+            <!-- ফোন -->
+            <div class="field">
+              <label class="field__label">মোবাইল নম্বর</label>
+              <div class="phone-prefix">
+                <span class="phone-prefix__code">🇧🇩 +880</span>
+                <input class="field__input" type="tel" id="admin-phone-inner"
+                       placeholder="01XXXXXXXXX" maxlength="11" inputmode="numeric"/>
+              </div>
+            </div>
+
+            <!-- PIN -->
+            <div class="field" style="margin-bottom:0">
+              <label class="field__label">অ্যাডমিন পিন <span style="color:var(--rose-l)">*</span></label>
               <div class="pin-input-wrap">
                 <input class="field__input" type="password" id="admin-pin"
-                       placeholder="নিরাপদ পিন দিন" maxlength="20"
+                       placeholder="পিন দিন" maxlength="20"
                        oninput="onPinInput(this.value)"
                        onkeydown="if(event.key==='Enter')unlockAdmin()"
                        style="padding-right:44px"/>
-                <button class="pin-eye" onclick="togglePinVisibility()" id="pin-eye-btn" title="দেখান/লুকান">👁️</button>
+                <button class="pin-eye" onclick="togglePinVisibility()" id="pin-eye-btn">👁️</button>
               </div>
               <div class="pin-strength" id="pin-strength">
                 <div class="pin-strength__dot" id="ps1"></div>
@@ -1602,9 +1660,10 @@ select.field__input { appearance:none; }
               <div class="pin-hint" id="pin-hint">আনলক করতে পিন দিন</div>
               <div class="hash-display" id="pin-hash-display"></div>
             </div>
-            <button class="btn btn--primary btn--full" onclick="unlockAdmin()">🔓 প্যানেল খুলুন</button>
-            <div style="margin-top:10px;font-size:0.72rem;color:var(--text-muted);text-align:center">
-              পিন সার্ভারে যাচাই করা হবে · পিন ভুললে Apps Script থেকে রিসেট করুন
+
+            <button class="btn btn--primary btn--full mt-4" onclick="unlockAdmin()">🔓 প্যানেল খুলুন</button>
+            <div style="margin-top:8px;font-size:0.7rem;color:var(--text-muted);text-align:center">
+              পিন সার্ভারে যাচাই হবে · ভুললে Apps Script থেকে রিসেট করুন
             </div>
           </div>
         </div>
@@ -1631,6 +1690,7 @@ select.field__input { appearance:none; }
           <div class="tab-bar" style="overflow-x:auto;flex-wrap:nowrap">
             <button class="tab-btn active" onclick="switchAdminTab('members', this)" style="white-space:nowrap">👤 সদস্য</button>
             <button class="tab-btn" onclick="switchAdminTab('user-detail', this)" style="white-space:nowrap" id="tab-btn-user-detail">🔍 বিস্তারিত</button>
+            <button class="tab-btn" onclick="switchAdminTab('ai-assistant', this); initAIAssistant()" style="white-space:nowrap" id="tab-btn-ai">🤖 AI সহকারী</button>
             <button class="tab-btn" onclick="switchAdminTab('charts', this)" style="white-space:nowrap">📊 চার্ট</button>
             <button class="tab-btn" onclick="switchAdminTab('reports', this)" style="white-space:nowrap">📋 রিপোর্ট</button>
             <button class="tab-btn" onclick="switchAdminTab('qa', this)" style="white-space:nowrap">💬 প্রশ্নোত্তর</button>
@@ -1679,7 +1739,49 @@ select.field__input { appearance:none; }
           </div>
 
           <!-- Charts tab -->
-          <!-- User Detail tab -->
+          <!-- AI Assistant tab -->
+          <div class="tab-panel" id="tab-ai-assistant">
+
+            <!-- Header -->
+            <div style="text-align:center;padding:20px 0 16px">
+              <div style="font-size:44px;margin-bottom:8px">🤖</div>
+              <div style="font-weight:800;font-size:1.15rem;background:linear-gradient(135deg,var(--gold),var(--emerald));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">ইমাম AI সহকারী</div>
+              <div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">নামাজের অবস্থা বিশ্লেষণ করে সুপারিশ দেয়</div>
+            </div>
+
+            <!-- Alert summary chips — auto filled -->
+            <div id="ai-alert-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px"></div>
+
+            <!-- Concern list — who needs attention -->
+            <div class="card card--gold mb-3" id="ai-concern-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <div style="font-weight:700;font-size:0.95rem">⚠️ মনোযোগ প্রয়োজন</div>
+                <button class="btn btn--ghost btn--sm" onclick="refreshAIData()" id="ai-refresh-btn">🔄 আপডেট</button>
+              </div>
+              <div id="ai-concern-list">
+                <div class="empty-state" style="padding:20px"><div class="spinner" style="width:24px;height:24px;border-width:2px;margin:0 auto 8px"></div>ডেটা লোড হচ্ছে…</div>
+              </div>
+            </div>
+
+            <!-- AI Summary -->
+            <div class="card mb-3">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <div style="font-weight:700;font-size:0.95rem">🧠 AI সামারি</div>
+                <button class="btn btn--primary btn--sm" onclick="generateAISummary()" id="ai-summary-btn">✨ Generate</button>
+              </div>
+              <div id="ai-summary-output" style="font-size:0.85rem;line-height:1.8;color:var(--text-secondary);min-height:60px">
+                <span style="color:var(--text-muted)">উপরের বাটনে ক্লিক করলে AI আজকের সম্পূর্ণ সারসংক্ষেপ তৈরি করবে।</span>
+              </div>
+            </div>
+
+            <!-- WhatsApp message generator -->
+            <div class="card" id="ai-wa-card" style="display:none">
+              <div style="font-weight:700;font-size:0.95rem;margin-bottom:14px">💬 WhatsApp বার্তা পাঠান</div>
+              <div id="ai-wa-list"></div>
+            </div>
+
+          </div>
+
           <div class="tab-panel" id="tab-user-detail">
             <div class="card mb-3" style="padding:16px">
               <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px">সদস্য ট্যাব থেকে নাম ক্লিক করলে এখানে বিস্তারিত দেখাবে</div>
@@ -1946,11 +2048,11 @@ function _decodeUrl() {
 }
 
 // Runtime-এ URL সেট হয় — source code-এ সরাসরি দেখা যায় না
-let API_URL = localStorage.getItem('https://script.google.com/macros/s/AKfycbyASmwekH6fv1bHVq6ijDtDUg40MYtrbYbtmiI17KgzURAMEyXLf6jYcAUC7Kr6PiEXpQ/exec')
+let API_URL = localStorage.getItem('https://script.google.com/macros/s/AKfycbyrqIhg5GxxMtmyjlsNlyq8NTExoZMxtwYA2FvIcYiStW8EgXQeSKt9Rg9ke1uXKj1aOw/exec')
   ? (function(){
       try {
         const _key = 'salat_monitor_secure_2024';
-        const _enc = atob(localStorage.getItem('https://script.google.com/macros/s/AKfycbyASmwekH6fv1bHVq6ijDtDUg40MYtrbYbtmiI17KgzURAMEyXLf6jYcAUC7Kr6PiEXpQ/exec'));
+        const _enc = atob(localStorage.getItem('https://script.google.com/macros/s/AKfycbyrqIhg5GxxMtmyjlsNlyq8NTExoZMxtwYA2FvIcYiStW8EgXQeSKt9Rg9ke1uXKj1aOw/exec'));
         let _dec = '';
         for (let i = 0; i < _enc.length; i++) {
           _dec += String.fromCharCode(_enc.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
@@ -2061,23 +2163,60 @@ async function unlockAdmin() {
   const pin = document.getElementById('admin-pin').value;
   if (!pin) { toast('পিন দিন', 'err'); return; }
 
+  // URL field থেকে save
+  const urlInp = document.getElementById('admin-url-inner');
+  if (urlInp && urlInp.value.trim().startsWith('https://script.google.com')) {
+    const url = urlInp.value.trim();
+    const _key = 'salat_monitor_secure_2024';
+    let enc = '';
+    for (let i = 0; i < url.length; i++)
+      enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
+    localStorage.setItem('https://script.google.com/macros/s/AKfycbyrqIhg5GxxMtmyjlsNlyq8NTExoZMxtwYA2FvIcYiStW8EgXQeSKt9Rg9ke1uXKj1aOw/exec', btoa(enc));
+    API_URL = url;
+  }
+
+  // নাম ও ফোন save করি
+  const nameInp  = document.getElementById('admin-name-inner');
+  const phoneInp = document.getElementById('admin-phone-inner');
+  const adminName  = (nameInp  && nameInp.value.trim())  || SESSION?.name  || 'ইমাম';
+  const adminPhone = (phoneInp && phoneInp.value.trim()) || SESSION?.phone || '';
+
+  // API URL চেক
+  if (!API_URL || !API_URL.startsWith('http')) {
+    toast('⚠️ আগে Apps Script URL বসান', 'err');
+    return;
+  }
+
   loading(true);
   try {
     const hash = await sha256(pin);
-    // hash preview সরিয়ে দিয়েছি — security risk ছিল
     document.getElementById('pin-hash-display').textContent = '';
 
     const res = await apiGet({ action: 'verifyAdminPin', pin_hash: hash });
     if (!res.success) { toast(res.message || 'পিন সঠিক নয় ✗', 'err'); return; }
 
+    // নাম ও ফোন সার্ভারে save
+    if (adminPhone) {
+      await apiPost({ action: 'saveAdminInfo', name: adminName, phone: adminPhone }).catch(() => {});
+    }
+
+    // Session update
+    saveSession({ user_id:'admin', name: adminName, phone: adminPhone, whatsapp_link:'', is_admin:true });
+    document.getElementById('greeting-name').textContent = adminName;
+
     document.getElementById('admin-gate').style.display  = 'none';
     document.getElementById('admin-panel').style.display = 'block';
     loadAdminData();
+
     if (res.data && res.data.first_login) {
-      toast('প্রথম লগইন — পিন পরিবর্তন করুন', 'ok');
+      toast('প্রথম লগইন ✓ — পিন পরিবর্তন করুন', 'ok');
+    } else {
+      toast('✓ প্যানেল আনলক হয়েছে', 'ok');
     }
-  } catch { toast('সার্ভার থেকে যাচাই ব্যর্থ হয়েছে', 'err'); }
-  finally { loading(false); }
+  } catch(e) {
+    console.error('unlockAdmin error:', e);
+    toast('সার্ভারে পৌঁছানো যাচ্ছে না। URL চেক করুন।', 'err');
+  } finally { loading(false); }
 }
 
 async function saveNewPinHash() {
@@ -2564,50 +2703,67 @@ let _phoneCheckTimer = null;
 let _foundUser = null; // server থেকে পাওয়া existing user
 
 function onPhoneInput(val) {
-  const msg = document.getElementById('phone-check-msg');
+  const msg     = document.getElementById('phone-check-msg');
+  const btnAuth = document.getElementById('btn-auth');
   const nameWrap = document.getElementById('auth-name-wrap');
   _foundUser = null;
+
+  // নাম field সবসময় দেখাবে
+  if (nameWrap) nameWrap.style.display = 'block';
+
   if (val.length < 10) {
-    msg.textContent = ''; msg.style.color = '';
-    nameWrap.style.display = 'none';
+    msg.textContent = '';
+    if (btnAuth) btnAuth.textContent = 'প্রবেশ করুন →';
     return;
   }
-  msg.textContent = '🔍 নম্বর যাচাই করা হচ্ছে…';
+
+  if (!API_URL || !API_URL.startsWith('http')) {
+    msg.textContent = '📝 নাম দিয়ে রেজিস্ট্রেশন করুন';
+    msg.style.color = 'var(--text-muted)';
+    return;
+  }
+
+  msg.textContent = '🔍 যাচাই হচ্ছে…';
   msg.style.color = 'var(--text-muted)';
   clearTimeout(_phoneCheckTimer);
-  _phoneCheckTimer = setTimeout(() => checkPhoneExists(val), 500);
+  _phoneCheckTimer = setTimeout(() => checkPhoneExists(val), 600);
 }
 
 async function checkPhoneExists(phone) {
-  const msg = document.getElementById('phone-check-msg');
+  const msg      = document.getElementById('phone-check-msg');
   const nameWrap = document.getElementById('auth-name-wrap');
-  if (!API_URL) { msg.textContent = '⚠️ API URL সেট নেই'; return; }
+  const btnAuth  = document.getElementById('btn-auth');
+
   try {
     const res = await apiGet({ action: 'getUserByPhone', phone });
     if (res.success && res.data) {
+      // পরিচিত নম্বর — নাম field লুকাই
       _foundUser = res.data;
       msg.innerHTML = `✅ <strong>${escHtml(res.data.name)}</strong> — পরিচিত নম্বর, সরাসরি ঢুকুন`;
       msg.style.color = 'var(--emerald-l)';
-      nameWrap.style.display = 'none';
-      document.getElementById('btn-auth').textContent = `✅ ${res.data.name} হিসেবে প্রবেশ →`;
+      if (nameWrap) nameWrap.style.display = 'none';
+      if (btnAuth)  btnAuth.textContent = `✅ ${res.data.name} হিসেবে প্রবেশ →`;
     } else {
+      // নতুন নম্বর — নাম field দেখাই (আগে থেকেই দেখানো)
       _foundUser = null;
-      msg.textContent = '🆕 নতুন নম্বর — নাম দিয়ে রেজিস্ট্রেশন করুন';
+      msg.textContent = '🆕 নতুন সদস্য — নাম দিয়ে রেজিস্ট্রেশন করুন';
       msg.style.color = 'var(--gold)';
-      nameWrap.style.display = 'block';
-      document.getElementById('btn-auth').textContent = 'রেজিস্ট্রেশন করুন →';
+      if (nameWrap) nameWrap.style.display = 'block';
+      if (btnAuth)  btnAuth.textContent = 'রেজিস্ট্রেশন করুন →';
     }
   } catch {
-    msg.textContent = '⚠️ সংযোগ সমস্যা';
-    msg.style.color = 'var(--rose-l)';
+    _foundUser = null;
+    msg.textContent = '⚠️ যাচাই করা যায়নি — নাম দিয়ে চেষ্টা করুন';
+    msg.style.color = 'var(--text-muted)';
+    if (nameWrap) nameWrap.style.display = 'block';
   }
 }
 
 async function handleAuth() {
   const phone = document.getElementById('auth-phone').value.trim();
-  if (!phone || phone.length < 10) { toast('সঠিক ফোন নম্বর দিন', 'err'); return; }
+  if (!phone || phone.length < 10) { toast('সঠিক ফোন নম্বর দিন (১১ সংখ্যা)', 'err'); return; }
 
-  // পরিচিত নম্বর — সরাসরি লগইন
+  // পরিচিত নম্বর (server check হয়ে গেছে) — সরাসরি লগইন
   if (_foundUser) {
     saveSession({ ..._foundUser, is_admin: false });
     toast(`স্বাগতম ফিরে এলেন, ${_foundUser.name}! 👋`, 'ok');
@@ -2616,25 +2772,35 @@ async function handleAuth() {
 
   // নতুন ইউজার — নাম দরকার
   const name = document.getElementById('auth-name').value.trim();
-  if (!name) { toast('নাম দিন', 'err'); return; }
+  if (!name) { toast('আপনার নাম দিন', 'err'); return; }
+
+  // API URL নেই — Admin-এ বলো URL সেট করতে
+  if (!API_URL || !API_URL.startsWith('http')) {
+    toast('⚠️ API URL সেট নেই। অ্যাডমিনের সাথে যোগাযোগ করুন।', 'err');
+    return;
+  }
 
   loading(true);
   try {
     // Duplicate phone check
     const checkRes = await apiGet({ action: 'getUserByPhone', phone });
     if (checkRes.success && checkRes.data) {
-      // এই নম্বরে আগে থেকে account আছে
       saveSession({ ...checkRes.data, is_admin: false });
       toast(`এই নম্বরে অ্যাকাউন্ট আছে। ${checkRes.data.name} হিসেবে লগইন হলো।`, 'ok');
       enterApp(); return;
     }
+    // নতুন register
     const res = await apiPost({ action:'registerUser', name, phone, whatsapp_link:'' });
-    if (!res.success) { toast(res.message || 'রেজিস্ট্রেশন ব্যর্থ', 'err'); return; }
+    if (!res.success) { toast(res.message || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে', 'err'); return; }
+    // race condition-এ যদি ইতিমধ্যে অন্য কেউ এই নম্বরে register করে ফেলে,
+    // সার্ভার existing user ফিরিয়ে দেয় — সেটা handle করি
     saveSession({ ...res.data, is_admin:false });
-    toast(`স্বাগতম, ${name}! ✨`, 'ok');
+    toast(`স্বাগতম, ${res.data.name}! ✨`, 'ok');
     enterApp();
-  } catch { toast('সংযোগ ব্যর্থ। নেটওয়ার্ক চেক করুন।', 'err'); }
-  finally { loading(false); }
+  } catch(e) {
+    console.error('handleAuth error:', e);
+    toast('সংযোগ ব্যর্থ। নেটওয়ার্ক ও API URL চেক করুন।', 'err');
+  } finally { loading(false); }
 }
 
 // Returning user — session থেকে সরাসরি
@@ -2681,7 +2847,7 @@ async function unlockAdminStandalone() {
     let enc = '';
     for (let i = 0; i < url.length; i++)
       enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
-    localStorage.setItem('https://script.google.com/macros/s/AKfycbyASmwekH6fv1bHVq6ijDtDUg40MYtrbYbtmiI17KgzURAMEyXLf6jYcAUC7Kr6PiEXpQ/exec', btoa(enc));
+    localStorage.setItem('https://script.google.com/macros/s/AKfycbyrqIhg5GxxMtmyjlsNlyq8NTExoZMxtwYA2FvIcYiStW8EgXQeSKt9Rg9ke1uXKj1aOw/exec', btoa(enc));
     API_URL = url;
   }
 
@@ -2772,7 +2938,7 @@ function saveQuickUrl() {
   let enc = '';
   for (let i = 0; i < url.length; i++)
     enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
-  localStorage.setItem('https://script.google.com/macros/s/AKfycbyASmwekH6fv1bHVq6ijDtDUg40MYtrbYbtmiI17KgzURAMEyXLf6jYcAUC7Kr6PiEXpQ/exec', btoa(enc));
+  localStorage.setItem('https://script.google.com/macros/s/AKfycbyrqIhg5GxxMtmyjlsNlyq8NTExoZMxtwYA2FvIcYiStW8EgXQeSKt9Rg9ke1uXKj1aOw/exec', btoa(enc));
   API_URL = url;
   const box = document.getElementById('admin-url-quick');
   if (box) box.style.display = 'none';
@@ -2813,6 +2979,12 @@ function enterApp() {
   }
 }
 
+function confirmLogout() {
+  if (confirm('আপনি কি লগ আউট করতে চান? পরের বার আবার নাম-ফোন নম্বর দিয়ে ঢুকতে হবে।')) {
+    logout();
+  }
+}
+
 function logout() {
   if (COUNTDOWN_TIMER) clearInterval(COUNTDOWN_TIMER);
   NOTIF_TIMERS.forEach(t => clearTimeout(t));
@@ -2832,10 +3004,19 @@ function logout() {
   const panelEl = document.getElementById('admin-panel');
   if (gateEl) gateEl.style.display = 'block';
   if (panelEl) panelEl.style.display = 'none';
-  // nav reset
+  // auth fields reset
+  const phoneEl = document.getElementById('auth-phone');
+  if (phoneEl) phoneEl.value = '';
+  const nameEl = document.getElementById('auth-name');
+  if (nameEl) nameEl.value = '';
+  const nameWrap = document.getElementById('auth-name-wrap');
+  if (nameWrap) nameWrap.style.display = 'none';
+  const checkMsg = document.getElementById('phone-check-msg');
+  if (checkMsg) checkMsg.textContent = '';
+  const btnAuth = document.getElementById('btn-auth');
+  if (btnAuth) btnAuth.textContent = 'প্রবেশ করুন →';
+  _foundUser = null;
   document.getElementById('nav-admin').style.display = 'none';
-  document.getElementById('auth-name').value = '';
-  document.getElementById('auth-phone').value = '';
   toast('লগ আউট হয়েছে', 'info');
 }
 
@@ -2872,6 +3053,7 @@ function switchScreen(name, btn) {
 
   if (name === 'community') { loadChatThread(); loadPublicQA(); }
   if (name === 'settings')  { loadUserSettingsScreen(); }
+  if (name === 'admin')     { setTimeout(initInnerAdminGate, 50); }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -3872,15 +4054,361 @@ async function loadAdminAudit() {
   } catch { el.innerHTML=`<div class="empty-state">লোড ব্যর্থ হয়েছে</div>`; }
 }
 
+// ═══════════════════════════════════════════════════════════
+//  🤖 IMAM AI ASSISTANT
+//  Claude API দিয়ে intelligent summary + WhatsApp message
+// ═══════════════════════════════════════════════════════════
+
+let AI_DATA_CACHE = null; // last loaded summary data
+
+// ── Tab খুললে auto-load ──────────────────────────────────
+async function initAIAssistant() {
+  if (!ALL_USERS_CACHE || !ALL_USERS_CACHE.length) {
+    // data না থাকলে load করো
+    const res = await apiGet({ action: 'getAdminStats' }).catch(() => null);
+    if (res && res.success) {
+      ALL_USERS_CACHE = res.data.userSummary;
+    }
+  }
+  buildAIConcernList();
+}
+
+async function refreshAIData() {
+  const btn = document.getElementById('ai-refresh-btn');
+  if (btn) btn.textContent = '⏳';
+  const res = await apiGet({ action: 'getAdminStats' }).catch(() => null);
+  if (res && res.success) ALL_USERS_CACHE = res.data.userSummary;
+  buildAIConcernList();
+  if (btn) btn.textContent = '🔄 আপডেট';
+}
+
+// ── Concern list: missed salat + mosque absent ───────────
+function buildAIConcernList() {
+  const users = ALL_USERS_CACHE || [];
+  const today  = new Date().toISOString().slice(0, 10);
+
+  // classify each user
+  const concerns = [];
+  users.forEach(u => {
+    const wm       = u.waqtMap || {};
+    const waqts    = ['Fajr','Dhuhr','Asr','Maghrib','Isha'];
+    const logged   = waqts.filter(w => wm[w]);
+    const missed   = waqts.filter(w => wm[w] && wm[w].status === '0');
+    const atMosque = waqts.filter(w => wm[w] && wm[w].status === '1');
+    const atHome   = waqts.filter(w => wm[w] && wm[w].status === '2');
+    const noLog    = waqts.filter(w => !wm[w]);
+
+    let level = null; // 'critical' | 'warning' | 'info'
+    let reasons = [];
+
+    if (missed.length >= 3) {
+      level = 'critical';
+      reasons.push(`আজ ${missed.length} ওয়াক্ত মিস করেছেন (${missed.join(', ')})`);
+    } else if (missed.length >= 1) {
+      level = 'warning';
+      reasons.push(`আজ ${missed.length} ওয়াক্ত মিস (${missed.join(', ')})`);
+    }
+
+    if (logged.length >= 5 && atMosque.length === 0) {
+      level = level || 'warning';
+      reasons.push(`সব নামাজ বাড়িতে — মসজিদে আসেননি`);
+    } else if (logged.length >= 3 && atMosque.length === 0 && atHome.length >= 2) {
+      level = level || 'info';
+      reasons.push(`মসজিদে আসেননি`);
+    }
+
+    if (u.daysSince !== null && u.daysSince >= 3) {
+      level = level || 'warning';
+      reasons.push(`${u.daysSince} দিন ধরে কোনো লগ নেই`);
+    }
+
+    if (level && reasons.length) {
+      const rawPhone = String(u.phone || '').replace(/\D/g, '');
+      const display  = rawPhone.startsWith('880') ? '0'+rawPhone.slice(3) : rawPhone;
+      const waNum    = display ? '880'+display.replace(/^0/,'') : '';
+      concerns.push({
+        user_id: u.user_id, name: u.name, phone: display, waNum,
+        level, reasons,
+        missed_waqts: missed, mosque_waqts: atMosque,
+        home_waqts: atHome, no_log_waqts: noLog,
+        streak: u.streak, pct: u.pct, daysSince: u.daysSince,
+      });
+    }
+  });
+
+  AI_DATA_CACHE = { concerns, users, today };
+
+  // Alert chips
+  const critical = concerns.filter(c => c.level === 'critical').length;
+  const warning  = concerns.filter(c => c.level === 'warning').length;
+  const info     = concerns.filter(c => c.level === 'info').length;
+  const chips    = document.getElementById('ai-alert-chips');
+  if (chips) chips.innerHTML = [
+    critical ? `<span class="badge" style="background:rgba(192,68,74,0.15);border-color:var(--rose);color:var(--rose-l)">🔴 জরুরি: ${critical} জন</span>` : '',
+    warning  ? `<span class="badge badge--gold">⚠️ সতর্কতা: ${warning} জন</span>` : '',
+    info     ? `<span class="badge badge--muted">ℹ️ নজর রাখুন: ${info} জন</span>` : '',
+    `<span class="badge badge--green">✅ মোট সদস্য: ${users.length}</span>`,
+  ].join('');
+
+  // Concern list HTML
+  const listEl = document.getElementById('ai-concern-list');
+  if (!concerns.length) {
+    listEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--emerald-l)">
+      <div style="font-size:32px;margin-bottom:8px">🎉</div>
+      আলহামদুলিল্লাহ! আজ কোনো বিশেষ উদ্বেগ নেই।
+    </div>`;
+    return;
+  }
+
+  listEl.innerHTML = concerns.map(c => {
+    const borderColor = c.level==='critical' ? 'var(--rose)' : c.level==='warning' ? 'var(--gold)' : 'var(--border)';
+    const levelIcon   = c.level==='critical' ? '🔴' : c.level==='warning' ? '⚠️' : 'ℹ️';
+    const telHref     = c.phone ? `tel:+880${c.phone.replace(/^0/,'')}` : '';
+    const waHref      = c.waNum ? `https://wa.me/${c.waNum}` : '';
+
+    return `
+    <div style="border:1px solid ${borderColor};border-radius:12px;padding:14px;margin-bottom:10px;background:var(--bg)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:18px">${levelIcon}</span>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:0.92rem">${escHtml(c.name)}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);font-family:var(--font-mono)">${c.phone||'—'}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          ${telHref ? `<a class="action-btn action-btn--call" href="${telHref}" title="কল করুন">📞</a>` : ''}
+          ${waHref  ? `<button class="action-btn action-btn--wa" onclick="generateWAMessage('${c.user_id}')" title="AI বার্তা তৈরি করুন">💬 AI</button>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        ${c.reasons.map(r => `<div style="font-size:0.78rem;color:var(--text-secondary);padding:3px 8px;background:var(--bg-elevated);border-radius:6px">• ${r}</div>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        ${telHref ? `<a class="btn btn--ghost btn--sm" href="${telHref}" style="font-size:0.75rem">📞 কল করুন</a>` : ''}
+        ${waHref  ? `<button class="btn btn--ghost btn--sm" style="font-size:0.75rem" onclick="generateWAMessage('${c.user_id}')">💬 AI বার্তা তৈরি</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── AI Summary (Claude API) ──────────────────────────────
+async function generateAISummary() {
+  const btn = document.getElementById('ai-summary-btn');
+  const out = document.getElementById('ai-summary-output');
+  if (!AI_DATA_CACHE) { toast('আগে ডেটা লোড করুন', 'err'); return; }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ তৈরি হচ্ছে…';
+  out.innerHTML = `<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted)"><div class="spinner" style="width:20px;height:20px;border-width:2px;flex-shrink:0"></div> AI বিশ্লেষণ করছে…</div>`;
+
+  const { concerns, users, today } = AI_DATA_CACHE;
+  const totalUsers   = users.length;
+  const activeToday  = users.filter(u => u.waqtMap && Object.keys(u.waqtMap).length > 0).length;
+  const mosqueToday  = users.filter(u => {
+    const wm = u.waqtMap || {};
+    return Object.values(wm).some(w => w && w.status === '1');
+  }).length;
+  const critical     = concerns.filter(c => c.level === 'critical');
+  const warning      = concerns.filter(c => c.level === 'warning');
+  const ghost        = users.filter(u => u.daysSince !== null && u.daysSince >= 3);
+
+  const prompt = `তুমি একজন মসজিদের স্বয়ংক্রিয় নামাজ পর্যবেক্ষণ সিস্টেমের সহকারী। আজকের তারিখ ${today}।
+
+মসজিদের নামাজ মনিটরিং সিস্টেমের ডেটা:
+- মোট নিবন্ধিত সদস্য: ${totalUsers} জন
+- আজ লগ করেছেন: ${activeToday} জন
+- আজ মসজিদে নামাজ আদায় করেছেন: ${mosqueToday} জন
+- ৩+ দিন ধরে লগ নেই (গায়েব): ${ghost.length} জন
+
+⚠️ জরুরি মনোযোগ প্রয়োজন (${critical.length} জন):
+${critical.map(c => `- ${c.name} (${c.phone}): ${c.reasons.join('; ')}`).join('\n') || '(কেউ নেই)'}
+
+⚠️ সতর্কতা (${warning.length} জন):
+${warning.slice(0,8).map(c => `- ${c.name} (${c.phone}): ${c.reasons.join('; ')}`).join('\n') || '(কেউ নেই)'}
+
+${ghost.length ? `দীর্ঘদিন গায়েব:\n${ghost.slice(0,5).map(u=>`- ${u.name}: ${u.daysSince} দিন`).join('\n')}` : ''}
+
+ইমামের জন্য বাংলায় একটি সংক্ষিপ্ত কিন্তু সম্পূর্ণ সারসংক্ষেপ তৈরি করো। এতে থাকবে:
+১. আজকের সার্বিক অবস্থা (২-৩ বাক্য)
+২. কাদের সাথে এখনই যোগাযোগ করা উচিত (নাম ও কারণ)
+৩. ইমামের জন্য সুনির্দিষ্ট পরামর্শ
+৪. একটি উৎসাহজনক দোয়া বা কথা
+
+সহজ, সরল বাংলায় লিখো। অতিরিক্ত formal হওয়ার দরকার নেই।`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    const data = await response.json();
+    const text = (data.content || []).map(b => b.text || '').join('');
+    if (!text) throw new Error('empty response');
+
+    // Markdown-style render
+    out.innerHTML = text
+      .replace(/\n\n/g, '</p><p style="margin-top:10px">')
+      .replace(/\n/g, '<br>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--gold)">$1</strong>')
+      .replace(/^(.*)/, '<p>$1</p>');
+
+    // Show WA card too
+    document.getElementById('ai-wa-card').style.display = 'block';
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--rose-l)">AI সংযোগ ব্যর্থ হয়েছে। পরে আবার চেষ্টা করুন।<br><small>${e.message}</small></div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ আবার Generate';
+  }
+}
+
+// ── WhatsApp message generator per user (Claude API) ─────
+async function generateWAMessage(userId) {
+  if (!AI_DATA_CACHE) { toast('আগে ডেটা লোড করুন', 'err'); return; }
+  const concern = AI_DATA_CACHE.concerns.find(c => c.user_id === userId);
+  if (!concern) { toast('সদস্য পাওয়া যায়নি', 'err'); return; }
+
+  const waCard = document.getElementById('ai-wa-card');
+  const waList = document.getElementById('ai-wa-list');
+  waCard.style.display = 'block';
+
+  // placeholder while generating
+  const placeholderId = 'wa-msg-' + userId;
+  let existing = document.getElementById(placeholderId);
+  if (!existing) {
+    const div = document.createElement('div');
+    div.id = placeholderId;
+    div.style.cssText = 'border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;background:var(--bg)';
+    div.innerHTML = `<div style="font-weight:700;margin-bottom:8px">${escHtml(concern.name)}</div>
+      <div class="spinner" style="width:18px;height:18px;border-width:2px;margin:8px auto"></div>`;
+    waList.prepend(div);
+    existing = div;
+  } else {
+    existing.innerHTML = `<div style="font-weight:700;margin-bottom:8px">${escHtml(concern.name)}</div>
+      <div class="spinner" style="width:18px;height:18px;border-width:2px;margin:8px auto"></div>`;
+  }
+  waCard.scrollIntoView({ behavior:'smooth', block:'start' });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const waqtBN = {'Fajr':'ফজর','Dhuhr':'যোহর','Asr':'আসর','Maghrib':'মাগরিব','Isha':'এশা'};
+
+  const missedBN  = concern.missed_waqts.map(w => waqtBN[w]||w).join(', ') || 'কোনো ওয়াক্ত মিস নেই';
+  const mosqueBN  = concern.mosque_waqts.map(w => waqtBN[w]||w).join(', ') || 'কোনোটি না';
+  const homeBN    = concern.home_waqts.map(w => waqtBN[w]||w).join(', ') || 'কোনোটি না';
+
+  const prompt = `তুমি একটি মসজিদের নামাজ পর্যবেক্ষণ সিস্টেম। ইমাম সাহেবের পক্ষ থেকে নিচের ব্যক্তির জন্য একটি ব্যক্তিগত WhatsApp বার্তা তৈরি করো।
+
+ব্যক্তির তথ্য:
+- নাম: ${concern.name}
+- তারিখ: ${today}
+- আজ মিস করা নামাজ: ${missedBN}
+- আজ মসজিদে পড়া: ${mosqueBN}
+- আজ বাড়িতে পড়া: ${homeBN}
+${concern.daysSince >= 3 ? `- ${concern.daysSince} দিন ধরে কোনো লগ নেই` : ''}
+- মসজিদ উপস্থিতি হার: ${concern.pct}%
+- বর্তমান streak: ${concern.streak} দিন
+- সমস্যা: ${concern.reasons.join('; ')}
+
+নিয়ম:
+১. বার্তাটি সৌহার্দ্যপূর্ণ ও উৎসাহজনক হবে — কখনো কঠোর বা অপমানজনক নয়
+২. ব্যক্তির পরিস্থিতি অনুযায়ী কাস্টমাইজড হবে (মিসের কারণ জিজ্ঞেস করবে)
+৩. সালাম দিয়ে শুরু হবে
+৪. ৩-৫ বাক্যের মধ্যে রাখো
+৫. শেষে দোয়া বা উৎসাহ দিয়ে শেষ করো
+৬. WhatsApp-এ পাঠানোর জন্য ready format-এ দাও (emoji ব্যবহার করো)
+৭. শুধু বার্তাটুকু দাও, কোনো explanation নয়`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 400,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    const data = await response.json();
+    const msg  = (data.content || []).map(b => b.text || '').join('').trim();
+    if (!msg) throw new Error('empty');
+
+    const waHref = concern.waNum ? `https://wa.me/${concern.waNum}?text=${encodeURIComponent(msg)}` : '';
+
+    existing.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:16px">👤</span>
+        <div>
+          <div style="font-weight:700;font-size:0.9rem">${escHtml(concern.name)}</div>
+          <div style="font-size:0.72rem;color:var(--text-muted)">${concern.phone||'—'}</div>
+        </div>
+        ${concern.level==='critical'?'<span class="badge badge--red" style="margin-left:auto">🔴 জরুরি</span>':'<span class="badge badge--gold" style="margin-left:auto">⚠️ সতর্কতা</span>'}
+      </div>
+
+      <!-- Generated message box -->
+      <div style="background:var(--bg-elevated);border-radius:10px;padding:12px 14px;font-size:0.83rem;line-height:1.75;white-space:pre-wrap;border-left:3px solid var(--emerald);margin-bottom:12px" id="wa-text-${userId}">${escHtml(msg)}</div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${waHref ? `<a class="btn btn--primary btn--sm" href="${waHref}" target="_blank" style="background:#25D366;border-color:#25D366">📲 WhatsApp-এ পাঠান</a>` : ''}
+        <button class="btn btn--ghost btn--sm" onclick="copyWAMsg('${userId}')">📋 কপি করুন</button>
+        <button class="btn btn--ghost btn--sm" onclick="generateWAMessage('${userId}')">🔄 নতুন করে</button>
+      </div>`;
+  } catch(e) {
+    existing.innerHTML += `<div style="color:var(--rose-l);font-size:0.8rem">বার্তা তৈরি ব্যর্থ হয়েছে। আবার চেষ্টা করুন।</div>`;
+  }
+}
+
+function copyWAMsg(userId) {
+  const el = document.getElementById('wa-text-' + userId);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => toast('✓ বার্তা কপি হয়েছে', 'ok'));
+}
+
+function onInnerUrlInput(val) {
+  const icon = document.getElementById('inner-url-icon');
+  const text = document.getElementById('inner-url-text');
+  const inp  = document.getElementById('admin-url-inner');
+  if (val.startsWith('https://script.google.com')) {
+    if (icon) icon.textContent = '✅';
+    if (text) { text.textContent = '✓ ঠিক আছে'; text.style.color = 'var(--emerald-l)'; }
+    if (inp)  inp.style.borderColor = 'var(--emerald)';
+  } else if (val.length > 5) {
+    if (icon) icon.textContent = '⚠️';
+    if (text) { text.textContent = 'Apps Script URL হতে হবে'; text.style.color = 'var(--rose-l)'; }
+    if (inp)  inp.style.borderColor = 'var(--rose)';
+  } else {
+    if (icon) icon.textContent = '⚠️';
+    if (text) { text.textContent = 'Apps Script Web App URL বসান'; text.style.color = 'var(--text-muted)'; }
+  }
+}
+
+// Admin gate খুললে URL pre-fill করি
+function initInnerAdminGate() {
+  const urlInp = document.getElementById('admin-url-inner');
+  const icon   = document.getElementById('inner-url-icon');
+  const text   = document.getElementById('inner-url-text');
+  if (urlInp && API_URL && API_URL.startsWith('https://script.google.com')) {
+    urlInp.value = API_URL;
+    urlInp.style.borderColor = 'var(--emerald)';
+    if (icon) icon.textContent = '✅';
+    if (text) { text.textContent = 'URL সেট আছে ✓'; text.style.color = 'var(--emerald-l)'; }
+  }
+  // session থেকে নাম ও ফোন pre-fill
+  const nameInp  = document.getElementById('admin-name-inner');
+  const phoneInp = document.getElementById('admin-phone-inner');
+  if (nameInp  && SESSION?.name  && SESSION.name  !== 'ইমাম') nameInp.value  = SESSION.name;
+  if (phoneInp && SESSION?.phone)                              phoneInp.value = SESSION.phone;
+}
 function switchAdminTab(name, btn) {
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById(`tab-${name}`).classList.add('active');
   btn.classList.add('active');
 }
-
-// ═══════════════════════════════════════════════════════════
-//  ADMIN SETTINGS
 // ═══════════════════════════════════════════════════════════
 async function loadSettingsTab() {
   // URL দেখানো হবে না — security
@@ -3948,7 +4476,7 @@ function saveApiUrl() {
   for (let i = 0; i < url.length; i++) {
     _enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
   }
-  localStorage.setItem('https://script.google.com/macros/s/AKfycbyASmwekH6fv1bHVq6ijDtDUg40MYtrbYbtmiI17KgzURAMEyXLf6jYcAUC7Kr6PiEXpQ/exec', btoa(_enc));
+  localStorage.setItem('https://script.google.com/macros/s/AKfycbyrqIhg5GxxMtmyjlsNlyq8NTExoZMxtwYA2FvIcYiStW8EgXQeSKt9Rg9ke1uXKj1aOw/exec', btoa(_enc));
   localStorage.removeItem('salat_api_url'); // পুরনো plain URL মুছে দাও
   // Admin settings input blank করো — URL দেখানো যাবে না
   const el = document.getElementById('api-url-input');
@@ -4023,23 +4551,17 @@ async function changeUserPin() {
   loadSession();
   updateStoredHashDisplay();
 
-  if (SESSION && !SESSION.is_admin) {
-    // session আছে — returning user card দেখাই
-    const retEl   = document.getElementById('auth-returning');
-    const newEl   = document.getElementById('auth-new');
-    const nameEl  = document.getElementById('auth-return-name');
-    const phoneEl = document.getElementById('auth-return-phone');
-    if (retEl && nameEl && phoneEl) {
-      nameEl.textContent  = `স্বাগতম, ${SESSION.name}! 👋`;
-      phoneEl.textContent = SESSION.phone || '';
-      retEl.style.display = 'block';
-      if (newEl) newEl.style.display = 'none';
-    } else {
-      // fallback
-      enterApp();
-    }
-  } else if (SESSION && SESSION.is_admin) {
+  // ── Messenger-এর মতো auto-login ──────────────────────────
+  // Session থাকলে কোনো ক্লিক ছাড়াই সরাসরি app-এ ঢুকে যাবে
+  if (SESSION && SESSION.user_id) {
     enterApp();
+    return;
+  }
+
+  // API URL না থাকলে hint দেখাও (নতুন ইউজারের জন্য)
+  if (!API_URL || !API_URL.startsWith('http')) {
+    const hint = document.getElementById('auth-url-hint');
+    if (hint) hint.style.display = 'block';
   }
 })();
 </script>
