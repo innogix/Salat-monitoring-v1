@@ -1133,7 +1133,7 @@ select.field__input { appearance:none; }
   <!-- ═══════════════════════════════════════
        AUTH SCREEN
   ═══════════════════════════════════════ -->
-  <div id="screen-auth" class="screen active">
+  <div id="screen-auth" class="screen" style="display:none">
     <div class="auth-bg"></div>
     <div class="auth-wrap">
       <div class="auth-logo">
@@ -1171,21 +1171,28 @@ select.field__input { appearance:none; }
             </div>
             <div style="font-size:0.7rem;margin-top:5px" id="phone-check-msg"></div>
           </div>
-          <!-- নাম — শুধু নতুন ইউজারের জন্য দেখাবে -->
+          <!-- নাম -->
           <div class="field" id="auth-name-wrap" style="margin-bottom:0">
             <label class="field__label">আপনার নাম <span style="color:var(--rose-l)">*</span></label>
             <input class="field__input" type="text" id="auth-name" placeholder="আপনার পুরো নাম লিখুন" autocomplete="name"/>
             <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">নতুন হলে নাম দিন · পরিচিত নম্বর হলে স্বয়ংক্রিয় লগইন হবে</div>
+          </div>
+          <!-- হোয়াটসঅ্যাপ নম্বর -->
+          <div class="field" id="auth-wa-wrap" style="margin-top:12px;margin-bottom:0">
+            <label class="field__label">হোয়াটসঅ্যাপ নম্বর <span style="color:var(--text-muted);font-size:0.7rem">(ঐচ্ছিক)</span></label>
+            <div class="phone-prefix">
+              <span class="phone-prefix__code">🇧🇩 +880</span>
+              <input class="field__input" type="tel" id="auth-wa"
+                     placeholder="মোবাইল নম্বরের মতো হলে একই লিখুন"
+                     maxlength="11" inputmode="numeric"/>
+            </div>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">ইমাম এই নম্বরে সরাসরি WhatsApp বার্তা পাঠাতে পারবেন</div>
           </div>
         </div>
 
         <button class="btn btn--primary btn--full mt-4" id="btn-auth" onclick="handleAuth()">
           <span>প্রবেশ করুন →</span>
         </button>
-        <!-- API URL না থাকলে hint দেখাবে -->
-        <div id="auth-url-hint" style="display:none;margin-top:10px;padding:10px 14px;background:rgba(192,68,74,0.08);border:1px solid rgba(192,68,74,0.25);border-radius:10px;font-size:0.78rem;color:var(--rose-l);text-align:center">
-          ⚠️ সিস্টেম এখনো সেটআপ হয়নি। ইমামের সাথে যোগাযোগ করুন।
-        </div>
       </div>
 
       <div style="margin-top:28px;text-align:center">
@@ -2023,44 +2030,27 @@ select.field__input { appearance:none; }
 // অথবা সরাসরি: PASTE_YOUR_URL_HERE জায়গায় আপনার URL দিন
 // তারপর নিচের obfuscate function চালু হলে আর সরাসরি দেখা যাবে না
 
-const _ENC = (function() {
-  // এখানে আপনার URL টা বসান — শুধু এই একটা জায়গায়
-  const _raw = 'PASTE_YOUR_URL_HERE';
-  // XOR key দিয়ে এনকোড করা হচ্ছে
-  const _key = 'salat_monitor_secure_2024';
-  let _enc = '';
-  for (let i = 0; i < _raw.length; i++) {
-    _enc += String.fromCharCode(_raw.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
-  }
-  return btoa(_enc);
-})();
+// ═══════════════════════════════════════════════════════════
+//  API URL — সহজ সিস্টেম
+//  ১. Admin settings থেকে URL সেট করলে localStorage-এ থাকে
+//  ২. অথবা নিচে সরাসরি বসান (একবার বসালে সবসময় কাজ করবে)
+// ═══════════════════════════════════════════════════════════
+const HARDCODED_URL = 'https://script.google.com/macros/s/AKfycbyGR_y45DjFuR2I5LTD1iI2QSkBJTI81uaq3ygPREYK5Nv24WfNpiM6gkiISd041zBNhw/exec'; // ← এখানে আপনার URL বসান
 
-function _decodeUrl() {
+function _getStoredUrl() {
   try {
+    const enc = localStorage.getItem('salat_api_url_enc');
+    if (!enc) return '';
     const _key = 'salat_monitor_secure_2024';
-    const _enc = atob(_ENC);
-    let _dec = '';
-    for (let i = 0; i < _enc.length; i++) {
-      _dec += String.fromCharCode(_enc.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
-    }
-    return _dec;
+    const _raw = atob(enc);
+    let dec = '';
+    for (let i = 0; i < _raw.length; i++)
+      dec += String.fromCharCode(_raw.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
+    return dec.startsWith('https://') ? dec : '';
   } catch { return ''; }
 }
 
-// Runtime-এ URL সেট হয় — source code-এ সরাসরি দেখা যায় না
-let API_URL = localStorage.getItem('https://script.google.com/macros/s/AKfycbyrqIhg5GxxMtmyjlsNlyq8NTExoZMxtwYA2FvIcYiStW8EgXQeSKt9Rg9ke1uXKj1aOw/exec')
-  ? (function(){
-      try {
-        const _key = 'salat_monitor_secure_2024';
-        const _enc = atob(localStorage.getItem('https://script.google.com/macros/s/AKfycbyrqIhg5GxxMtmyjlsNlyq8NTExoZMxtwYA2FvIcYiStW8EgXQeSKt9Rg9ke1uXKj1aOw/exec'));
-        let _dec = '';
-        for (let i = 0; i < _enc.length; i++) {
-          _dec += String.fromCharCode(_enc.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
-        }
-        return _dec;
-      } catch { return _decodeUrl(); }
-    })()
-  : _decodeUrl();
+let API_URL = _getStoredUrl() || (HARDCODED_URL.startsWith('https://') ? HARDCODED_URL : '');
 
 // ═══════════════════════════════════════════════════════════
 //  API HELPERS — CORS fix (Content-Type: text/plain)
@@ -2171,7 +2161,7 @@ async function unlockAdmin() {
     let enc = '';
     for (let i = 0; i < url.length; i++)
       enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
-    localStorage.setItem('https://script.google.com/macros/s/AKfycbyrqIhg5GxxMtmyjlsNlyq8NTExoZMxtwYA2FvIcYiStW8EgXQeSKt9Rg9ke1uXKj1aOw/exec', btoa(enc));
+    localStorage.setItem('salat_api_url_enc', btoa(enc));
     API_URL = url;
   }
 
@@ -2180,12 +2170,6 @@ async function unlockAdmin() {
   const phoneInp = document.getElementById('admin-phone-inner');
   const adminName  = (nameInp  && nameInp.value.trim())  || SESSION?.name  || 'ইমাম';
   const adminPhone = (phoneInp && phoneInp.value.trim()) || SESSION?.phone || '';
-
-  // API URL চেক
-  if (!API_URL || !API_URL.startsWith('http')) {
-    toast('⚠️ আগে Apps Script URL বসান', 'err');
-    return;
-  }
 
   loading(true);
   try {
@@ -2215,7 +2199,7 @@ async function unlockAdmin() {
     }
   } catch(e) {
     console.error('unlockAdmin error:', e);
-    toast('সার্ভারে পৌঁছানো যাচ্ছে না। URL চেক করুন।', 'err');
+    toast('সার্ভারে পৌঁছানো যাচ্ছে না।', 'err');
   } finally { loading(false); }
 }
 
@@ -2717,12 +2701,6 @@ function onPhoneInput(val) {
     return;
   }
 
-  if (!API_URL || !API_URL.startsWith('http')) {
-    msg.textContent = '📝 নাম দিয়ে রেজিস্ট্রেশন করুন';
-    msg.style.color = 'var(--text-muted)';
-    return;
-  }
-
   msg.textContent = '🔍 যাচাই হচ্ছে…';
   msg.style.color = 'var(--text-muted)';
   clearTimeout(_phoneCheckTimer);
@@ -2774,12 +2752,6 @@ async function handleAuth() {
   const name = document.getElementById('auth-name').value.trim();
   if (!name) { toast('আপনার নাম দিন', 'err'); return; }
 
-  // API URL নেই — Admin-এ বলো URL সেট করতে
-  if (!API_URL || !API_URL.startsWith('http')) {
-    toast('⚠️ API URL সেট নেই। অ্যাডমিনের সাথে যোগাযোগ করুন।', 'err');
-    return;
-  }
-
   loading(true);
   try {
     // Duplicate phone check
@@ -2790,7 +2762,12 @@ async function handleAuth() {
       enterApp(); return;
     }
     // নতুন register
-    const res = await apiPost({ action:'registerUser', name, phone, whatsapp_link:'' });
+    // WhatsApp নম্বর থেকে link তৈরি
+    const waRaw    = document.getElementById('auth-wa')?.value.trim() || '';
+    const waDigits = waRaw.replace(/\D/g,'');
+    const waNum    = waDigits.startsWith('880') ? waDigits : waDigits.startsWith('0') ? '880'+waDigits.slice(1) : waDigits ? '880'+waDigits : '';
+    const waLink   = waNum ? `https://wa.me/${waNum}` : '';
+    const res = await apiPost({ action:'registerUser', name, phone, whatsapp_link: waLink });
     if (!res.success) { toast(res.message || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে', 'err'); return; }
     // race condition-এ যদি ইতিমধ্যে অন্য কেউ এই নম্বরে register করে ফেলে,
     // সার্ভার existing user ফিরিয়ে দেয় — সেটা handle করি
@@ -2799,7 +2776,7 @@ async function handleAuth() {
     enterApp();
   } catch(e) {
     console.error('handleAuth error:', e);
-    toast('সংযোগ ব্যর্থ। নেটওয়ার্ক ও API URL চেক করুন।', 'err');
+    toast('সংযোগ ব্যর্থ। নেটওয়ার্ক চেক করুন।', 'err');
   } finally { loading(false); }
 }
 
@@ -2847,41 +2824,11 @@ async function unlockAdminStandalone() {
     let enc = '';
     for (let i = 0; i < url.length; i++)
       enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
-    localStorage.setItem('https://script.google.com/macros/s/AKfycbyrqIhg5GxxMtmyjlsNlyq8NTExoZMxtwYA2FvIcYiStW8EgXQeSKt9Rg9ke1uXKj1aOw/exec', btoa(enc));
+    localStorage.setItem('salat_api_url_enc', btoa(enc));
     API_URL = url;
   }
 
-  // ── API URL চেক ──────────────────────────────────────────
-  if (!API_URL || !API_URL.startsWith('http')) {
-    // URL নেই — URL input দেখাই
-    const hint = document.getElementById('admin-pin-hint');
-    if (hint) {
-      hint.innerHTML = '⚠️ আগে <strong>API URL</strong> সেট করুন:';
-    }
-    const urlBox = document.getElementById('admin-url-quick');
-    if (urlBox) {
-      urlBox.style.display = 'block';
-    } else {
-      // Dynamic URL input inject করি
-      const pinWrap = document.getElementById('admin-pin-standalone').closest('.card--gold');
-      if (pinWrap && !document.getElementById('admin-url-quick')) {
-        const div = document.createElement('div');
-        div.id = 'admin-url-quick';
-        div.className = 'field';
-        div.style.marginTop = '14px';
-        div.innerHTML = `
-          <label class="field__label" style="color:var(--rose-l)">⚠️ API URL বসান (apps script URL)</label>
-          <input class="field__input" type="url" id="admin-url-quick-input"
-            placeholder="https://script.google.com/macros/s/.../exec"
-            style="font-size:0.78rem"/>
-          <button class="btn btn--ghost btn--sm btn--full" style="margin-top:8px"
-            onclick="saveQuickUrl()">✅ URL সেভ করুন</button>`;
-        pinWrap.appendChild(div);
-      }
-    }
-    toast('আগে API URL সেট করুন', 'err');
-    return;
-  }
+
 
   loading(true);
   try {
@@ -2938,7 +2885,7 @@ function saveQuickUrl() {
   let enc = '';
   for (let i = 0; i < url.length; i++)
     enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
-  localStorage.setItem('https://script.google.com/macros/s/AKfycbyrqIhg5GxxMtmyjlsNlyq8NTExoZMxtwYA2FvIcYiStW8EgXQeSKt9Rg9ke1uXKj1aOw/exec', btoa(enc));
+  localStorage.setItem('salat_api_url_enc', btoa(enc));
   API_URL = url;
   const box = document.getElementById('admin-url-quick');
   if (box) box.style.display = 'none';
@@ -3005,6 +2952,8 @@ function logout() {
   if (gateEl) gateEl.style.display = 'block';
   if (panelEl) panelEl.style.display = 'none';
   // auth fields reset
+  const waEl = document.getElementById('auth-wa');
+  if (waEl) waEl.value = '';
   const phoneEl = document.getElementById('auth-phone');
   if (phoneEl) phoneEl.value = '';
   const nameEl = document.getElementById('auth-name');
@@ -4476,7 +4425,7 @@ function saveApiUrl() {
   for (let i = 0; i < url.length; i++) {
     _enc += String.fromCharCode(url.charCodeAt(i) ^ _key.charCodeAt(i % _key.length));
   }
-  localStorage.setItem('https://script.google.com/macros/s/AKfycbyrqIhg5GxxMtmyjlsNlyq8NTExoZMxtwYA2FvIcYiStW8EgXQeSKt9Rg9ke1uXKj1aOw/exec', btoa(_enc));
+  localStorage.setItem('salat_api_url_enc', btoa(_enc));
   localStorage.removeItem('salat_api_url'); // পুরনো plain URL মুছে দাও
   // Admin settings input blank করো — URL দেখানো যাবে না
   const el = document.getElementById('api-url-input');
@@ -4551,17 +4500,12 @@ async function changeUserPin() {
   loadSession();
   updateStoredHashDisplay();
 
-  // ── Messenger-এর মতো auto-login ──────────────────────────
-  // Session থাকলে কোনো ক্লিক ছাড়াই সরাসরি app-এ ঢুকে যাবে
   if (SESSION && SESSION.user_id) {
+    // ── Session আছে → সরাসরি app-এ ঢুকে যাও (Messenger-এর মতো) ──
     enterApp();
-    return;
-  }
-
-  // API URL না থাকলে hint দেখাও (নতুন ইউজারের জন্য)
-  if (!API_URL || !API_URL.startsWith('http')) {
-    const hint = document.getElementById('auth-url-hint');
-    if (hint) hint.style.display = 'block';
+  } else {
+    // ── Session নেই → login screen দেখাও ──
+    document.getElementById('screen-auth').style.display = 'flex';
   }
 })();
 </script>
